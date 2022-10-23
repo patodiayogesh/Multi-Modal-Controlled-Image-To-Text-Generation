@@ -5,6 +5,7 @@ from PIL import Image
 from torchvision.transforms import transforms
 from collections import defaultdict
 import random
+import pytorch_lightning as pl
 
 
 class FlickrDataset(Dataset):
@@ -37,7 +38,7 @@ class FlickrDataset(Dataset):
         return img, caption
 
 
-class FlickrDatasetModule():
+class FlickrDatasetModule(pl.LightningDataModule):
 
     def _load_dataset(self):
 
@@ -54,46 +55,38 @@ class FlickrDatasetModule():
                  eval_batch_size=16,
                  transform=transforms.PILToTensor()):
 
+        super().__init__()
+
         flickr_dataset = self._load_dataset()
         flickr_dataset_filenames = list(flickr_dataset.keys())
         random.shuffle(flickr_dataset_filenames)
         dataset_length = len(flickr_dataset_filenames)
         train_length = int(dataset_length * 0.8)
         train_dataset_filenames = flickr_dataset_filenames[:train_length]
-
-        test_dataset = FlickrDataset(flickr_dataset_filenames[train_length:],
-                                     flickr_dataset,
-                                     transform)
+        test_dataset = flickr_dataset_filenames[train_length:]
         train_length -= int(train_length * 0.2)
-        train_dataset = FlickrDataset(train_dataset_filenames[:train_length],
-                                      flickr_dataset,
-                                      transform)
-        val_dataset = FlickrDataset(train_dataset_filenames[train_length:],
-                                    flickr_dataset,
-                                    transform)
+        train_dataset = train_dataset_filenames[:train_length]
+        val_dataset = train_dataset_filenames[train_length:]
 
-        # flickr_dataset = torchvision.datasets.Flickr30k('datasets/flickr30k_images',
-        #                                                 'datasets/flickr30k/results_20130124.token',
-        #                                                 transform=transforms.ToTensor())
-        # dataset_length = len(flickr_dataset)
-        # train_length = int(dataset_length * 0.8)
-        # test_length = dataset_length - train_length
-        # train_dataset, test_dataset = torch.utils.data.random_split(flickr_dataset,
-        #                                                             [train_length, test_length],
-        #                                                             generator=torch.Generator().manual_seed(42)
-        #                                                             )
-        # val_length = int(train_length * 0.2)
-        # train_length = train_length - val_length
-        # train_dataset, val_dataset = torch.utils.data.random_split(train_dataset,
-        #                                                            [train_length, val_length],
-        #                                                            generator=torch.Generator().manual_seed(42)
-        #                                                            )
-
-        self.train_dataset = train_dataset
-        self.val_dataset = val_dataset
-        self.test_dataset = test_dataset
+        self.dataset = flickr_dataset
+        self.train_filenames = train_dataset
+        self.val_filenames = val_dataset
+        self.test_filenames = test_dataset
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
+        self.transform = transform
+
+    def setup(self, stage= None):
+
+        if stage == 'fit' or stage is None:
+            self.train_dataset = FlickrDataset(self.train_filenames, self.dataset, self.transform)
+            self.val_dataset = FlickrDataset(self.val_filenames, self.dataset, self.transform)
+
+        if stage == 'validate':
+            self.val_dataset = FlickrDataset(self.val_filenames, self.dataset, self.transform)
+
+        if stage == 'test':
+            self.test_dataset = FlickrDataset(self.test_filenames, self.dataset, self.transform)
 
     def _set_image_feature_extractor(self, image_feature_extractor):
         self.image_feature_extractor = image_feature_extractor

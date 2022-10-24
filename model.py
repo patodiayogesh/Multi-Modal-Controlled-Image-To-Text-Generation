@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 from transformers import VisionEncoderDecoderModel
-from transformers import BeitModel, BeitFeatureExtractor
-from transformers import BertTokenizer, BertModel
+from transformers import BeitConfig, BeitFeatureExtractor
+from transformers import BertTokenizer, BertConfig, GPT2Tokenizer
 import pytorch_lightning as pl
 from evaluate import compute_bleu_scores
 
@@ -16,11 +16,6 @@ class BaselineModel(pl.LightningModule):
 
         super(BaselineModel, self).__init__()
 
-        # if torch.cuda.is_available():
-        #     self.device = torch.device('gpu')
-        # else:
-        #     self.device = torch.device('cpu')
-
         if image_encoder.lower() == 'beit':
             image_feature_extractor = BeitFeatureExtractor.from_pretrained("microsoft/beit-base-patch16-224-pt22k")
             image_encoder_path = "microsoft/beit-base-patch16-224-pt22k"
@@ -29,12 +24,18 @@ class BaselineModel(pl.LightningModule):
             decoder_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
             text_decoder_path = "bert-base-uncased"
 
+        if text_decoder.lower() == 'gpt2':
+            decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+            text_decoder_path = "gpt2"
+
         self.model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
             image_encoder_path,
             text_decoder_path,
         )
         self.image_feature_extractor = image_feature_extractor
         self.decoder_tokenizer = decoder_tokenizer
+        self.model.config.decoder.is_decoder = True
+        self.model.config.decoder.add_cross_attention = True
         self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
         self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
         self.beam_size = beam_size
@@ -77,7 +78,11 @@ class BaselineModel(pl.LightningModule):
             inputs, labels=labels, return_dict=True
         )
         val_loss = outputs.loss
-        output_sequences = self.model.generate(inputs)
+        output_sequences = self.model.generate(inputs,
+                                               max_length=512,
+                                               num_beams=self.beam_size,
+                                               num_return_sequences=1
+                                               )
 
         output_sequences, target_seq = self.detokenize(output_sequences), self.detokenize(labels)
         _, bleu_scores = compute_bleu_scores(output_sequences, target_seq)

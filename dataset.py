@@ -13,7 +13,8 @@ class FlickrDataset(Dataset):
     def __init__(self,
                  image_files,
                  dataset,
-                 transform=None):
+                 transform=None,
+                 ):
 
         self.image_dir = 'datasets/flickr30k_images/'
         self.images, self.captions = [], []
@@ -23,6 +24,7 @@ class FlickrDataset(Dataset):
                 self.images.append(image)
         self.unique_images = image_files
         self.transform = transform
+
 
     def __len__(self):
 
@@ -53,7 +55,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
     def __init__(self,
                  train_batch_size=16,
                  eval_batch_size=16,
-                 transform=transforms.PILToTensor()):
+                 transform=transforms.PILToTensor(),
+                 num_workers=12):
 
         super().__init__()
 
@@ -75,6 +78,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.transform = transform
+        self.num_workers = num_workers
 
     def setup(self, stage= None):
 
@@ -119,7 +123,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
             self.train_dataset,
             batch_size=self.train_batch_size,
             shuffle=True,
-            num_workers=16,
+            num_workers=self.num_workers,
             collate_fn=self.tokenize_data
         )
 
@@ -128,7 +132,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
             self.val_dataset,
             batch_size=self.eval_batch_size,
             shuffle=False,
-            num_workers=16,
+            num_workers=self.num_workers,
             collate_fn=self.tokenize_data
         )
 
@@ -137,6 +141,6 @@ class FlickrDatasetModule(pl.LightningDataModule):
             self.test_dataset,
             batch_size=self.eval_batch_size,
             shuffle=False,
-            num_workers=16,
+            num_workers=self.num_workers,
             collate_fn=self.tokenize_data
         )

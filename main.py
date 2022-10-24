@@ -43,7 +43,7 @@ class BaselineTrainer:
             ],
             # GPU specific
             auto_select_gpus=True,
-            # gpus=1,
+            gpus=1,
             # accumulate_grad_batches=12,
             # strategy='ddp',
             # Validation between epoch
@@ -75,6 +75,8 @@ if __name__ == '__main__':
     LR_SCHEDULER_REGISTRY.register_classes(
         transformers.optimization, torch.optim.lr_scheduler._LRScheduler, override=True
     )
+
+    print(torch.cuda.is_available())
 
     trainer = BaselineTrainer(
         args.image_encoder,

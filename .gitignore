@@ -1,3 +1,6 @@
 .DS_Store*
 .idea*
 datasets*
+*log
+*pycache*
+*log*

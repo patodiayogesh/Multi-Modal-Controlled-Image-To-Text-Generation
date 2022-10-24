@@ -80,7 +80,7 @@ class BaselineModel(pl.LightningModule):
         output_sequences = self.model.generate(inputs)
 
         output_sequences, target_seq = self.detokenize(output_sequences), self.detokenize(labels)
-        _, blue_scores = compute_bleu_scores(output_sequences, target_seq)
+        _, bleu_scores = compute_bleu_scores(output_sequences, target_seq)
 
         s = ''
         for i,_ in enumerate(output_sequences):
@@ -88,7 +88,7 @@ class BaselineModel(pl.LightningModule):
             s += f"- gold\n```\n{target_seq[i]}\n```\n\n"
             s += f"- pred\n```\n{output_sequences[i]}\n```\n\n"
             s += f"- metrics\n\n"
-            s += f"Bleu score: {blue_scores[i]}\n"
+            s += f"Bleu score: {bleu_scores[i]}\n"
             s += "\n"
         self.logger.experiment.add_text("examples/val", s, global_step=self.global_step)
         self.log_dict({"loss/val": val_loss.item()}, on_step=True)

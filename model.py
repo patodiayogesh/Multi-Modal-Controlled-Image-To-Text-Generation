@@ -63,13 +63,13 @@ class BaselineModel(pl.LightningModule):
     def configure_optimizers(self):
 
         lr_config = {
-            'max_lr': 0.001,
+            'max_lr': 0.01,
             'pct_start': 0.1,
             'div_factor': 1,
             'total_steps': 50,
             'anneal_strategy': 'linear'
         }
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=0.001, eps=1e-8, weight_decay=0.01)
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=0.01, eps=1e-8, weight_decay=0.01)
         lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, **lr_config)
         return {
             "optimizer": optimizer,

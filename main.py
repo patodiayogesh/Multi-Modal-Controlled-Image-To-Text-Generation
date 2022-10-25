@@ -46,9 +46,6 @@ class BaselineTrainer:
             devices=1,
             # accumulate_grad_batches=12,
             # strategy='ddp',
-            # Validation between epoch
-            limit_val_batches=0.0,
-            check_val_every_n_epoch=1
         )
 
     def train_model(self):

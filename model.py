@@ -48,6 +48,7 @@ class BaselineModel(pl.LightningModule):
         self.model.config.vocab_size = config_decoder.vocab_size
 
         if text_decoder == 'gpt2':
+            self.decoder_tokenizer.pad_token_id = self.decoder_tokenizer.eos_token_id
             self.model.config.pad_token_id = self.decoder_tokenizer.eos_token_id
             self.model.config.decoder_start_token_id = self.decoder_tokenizer.bos_token_id
         elif text_decoder == 'bert':

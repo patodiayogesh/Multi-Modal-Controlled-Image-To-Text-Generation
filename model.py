@@ -68,15 +68,19 @@ class BaselineModel(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        lr_config = {
-            'max_lr': 0.01,
+        one_cycle_lr_config = {
+            'max_lr': 0.0001,
             'pct_start': 0.1,
             'div_factor': 1,
             'total_steps': 50,
             'anneal_strategy': 'linear'
         }
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=0.01, eps=1e-8, weight_decay=0.01)
-        lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, **lr_config)
+        exponential_lr_config = {
+            'gamma': 0.5
+        }
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=0.0001, eps=1e-8, weight_decay=0.01)
+        #lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, **lr_config)
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, **exponential_lr_config)
         return {
             "optimizer": optimizer,
             "lr_scheduler": lr_scheduler,
@@ -138,3 +142,10 @@ class BaselineModel(pl.LightningModule):
         for seq in sequences:
             pred.append(self.decoder_tokenizer.decode(seq, skip_special_tokens=True))
         return pred
+
+    def on_save_checkpoint(self, checkpoint):
+
+        version_number = self.trainer.logger.version
+        epoch_number = self.trainer.current_epoch
+        path = f'lightning_logs/version_{version_number}/checkpoints/epoch_{epoch_number}/'
+        self.model.save_pretrained(path)

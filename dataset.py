@@ -108,15 +108,15 @@ class FlickrDatasetModule(pl.LightningDataModule):
         captions = [t[1] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
-        label_input_ids = self.decoder_tokenizer(
+        labels = self.decoder_tokenizer(
             captions,
             padding="longest",
             truncation=True,
             max_length=512,
             return_tensors="pt",
-        ).input_ids
+        )
 
-        return image_encodings, label_input_ids
+        return image_encodings, labels
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(

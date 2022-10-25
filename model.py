@@ -6,6 +6,7 @@ from transformers import BertTokenizer, GPT2Tokenizer
 import pytorch_lightning as pl
 from evaluate import compute_bleu_scores
 
+
 class BaselineModel(pl.LightningModule):
 
     def __init__(self,
@@ -41,14 +42,16 @@ class BaselineModel(pl.LightningModule):
         config_decoder = self.model.config.decoder
         config_decoder.is_decoder = True
         config_decoder.add_cross_attention = True
-        self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
         self.model.config.vocab_size = config_decoder.vocab_size
 
         if text_decoder_path == 'gpt2':
-            self.decoder_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        self.beam_size = beam_size
+            self.model.config.pad_token_id = self.decoder_tokenizer.eos_token_id
+            self.model.config.decoder_start_token_id = self.decoder_tokenizer.bos_token_id
+        elif text_decoder_path == 'bert':
+            self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
+            self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
 
-        self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
+        self.beam_size = beam_size
 
         self.save_hyperparameters()
 
@@ -74,18 +77,30 @@ class BaselineModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         inputs, labels = batch
+        labels_input_ids = labels.input_ids
+        labels_attention_mask = labels.attention_mask
         outputs = self.model(
-            inputs, labels=labels, return_dict=True
+            inputs,
+            decoder_input_ids=labels_input_ids,
+            decoder_attention_mask=labels_attention_mask,
+            labels=labels,
+            return_dict=True
         )
         train_loss = outputs.loss
         self.log_dict({"loss/train": train_loss.item()}, on_step=True)
         return train_loss
 
-    def validation_step(self,batch, batch_idx):
+    def validation_step(self, batch, batch_idx):
 
         inputs, labels = batch
+        labels_input_ids = labels.input_ids
+        labels_attention_mask = labels.attention_mask
         outputs = self.model(
-            inputs, labels=labels, return_dict=True
+            inputs,
+            decoder_input_ids=labels_input_ids,
+            decoder_attention_mask=labels_attention_mask,
+            labels=labels,
+            return_dict=True
         )
         val_loss = outputs.loss
         output_sequences = self.model.generate(inputs,
@@ -98,7 +113,7 @@ class BaselineModel(pl.LightningModule):
         _, bleu_scores = compute_bleu_scores(output_sequences, target_seq)
 
         s = ''
-        for i,_ in enumerate(output_sequences):
+        for i, _ in enumerate(output_sequences):
             s += f"# Example {i}\n\n"
             s += f"- gold\n```\n{target_seq[i]}\n```\n\n"
             s += f"- pred\n```\n{output_sequences[i]}\n```\n\n"

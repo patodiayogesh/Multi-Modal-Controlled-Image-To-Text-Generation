@@ -17,9 +17,10 @@ class BaselineTrainer:
                  image_encoder,
                  text_decoder,
                  dataset,
-                 fast_dev):
+                 freeze_image_encoder,
+                 fast_dev,):
 
-        self.model = BaselineModel(image_encoder, text_decoder)
+        self.model = BaselineModel(image_encoder, text_decoder, freeze_image_encoder)
         if dataset == 'flickr30k':
             self.dataModule = FlickrDatasetModule()
         else:
@@ -62,6 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--image_encoder', type=str, default='beit', required=False)
     parser.add_argument('--text_decoder', type=str, default='bert', required=False)
     parser.add_argument('--dataset', type=str, default='flickr30k', required=False)
+    parser.add_argument('--freeze_image_encoder', type=bool, default=False)
     parser.add_argument('--fast_dev', type=bool, default=False)
     args = parser.parse_args()
 
@@ -77,6 +79,7 @@ if __name__ == '__main__':
         args.image_encoder,
         args.text_decoder,
         args.dataset,
+        args.freeze_image_encoder,
         args.fast_dev
     )
     trainer.train_model()

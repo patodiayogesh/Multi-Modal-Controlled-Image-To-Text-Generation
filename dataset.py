@@ -62,6 +62,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
 
         flickr_dataset = self._load_dataset()
         flickr_dataset_filenames = list(flickr_dataset.keys())
+        random.seed(42)
         random.shuffle(flickr_dataset_filenames)
         dataset_length = len(flickr_dataset_filenames)
         train_length = int(dataset_length * 0.8)

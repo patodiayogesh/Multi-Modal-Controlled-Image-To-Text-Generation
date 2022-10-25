@@ -17,17 +17,20 @@ class BaselineModel(pl.LightningModule):
 
         super(BaselineModel, self).__init__()
 
-        if image_encoder.lower() == 'beit':
+        image_encoder = image_encoder.lower()
+        text_decoder = text_decoder.lower()
+
+        if image_encoder == 'beit':
             image_feature_extractor = BeitFeatureExtractor.from_pretrained("microsoft/beit-base-patch16-224-pt22k")
             image_encoder_path = "microsoft/beit-base-patch16-224-pt22k"
-        if image_encoder.lower() == 'vit':
+        if image_encoder == 'vit':
             image_feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
             image_encoder_path = 'google/vit-base-patch16-224-in21k'
 
-        if text_decoder.lower() == 'bert':
+        if text_decoder == 'bert':
             decoder_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
             text_decoder_path = "bert-base-uncased"
-        if text_decoder.lower() == 'gpt2':
+        if text_decoder == 'gpt2':
             decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
             text_decoder_path = "gpt2"
 
@@ -38,16 +41,15 @@ class BaselineModel(pl.LightningModule):
         self.image_feature_extractor = image_feature_extractor
         self.decoder_tokenizer = decoder_tokenizer
 
-        config_encoder = self.model.config.encoder
         config_decoder = self.model.config.decoder
         config_decoder.is_decoder = True
         config_decoder.add_cross_attention = True
         self.model.config.vocab_size = config_decoder.vocab_size
 
-        if text_decoder_path == 'gpt2':
+        if text_decoder == 'gpt2':
             self.model.config.pad_token_id = self.decoder_tokenizer.eos_token_id
             self.model.config.decoder_start_token_id = self.decoder_tokenizer.bos_token_id
-        elif text_decoder_path == 'bert':
+        elif text_decoder == 'bert':
             self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
             self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
 
@@ -83,7 +85,7 @@ class BaselineModel(pl.LightningModule):
             inputs,
             decoder_input_ids=labels_input_ids,
             decoder_attention_mask=labels_attention_mask,
-            labels=labels,
+            labels=labels_input_ids,
             return_dict=True
         )
         train_loss = outputs.loss
@@ -99,7 +101,7 @@ class BaselineModel(pl.LightningModule):
             inputs,
             decoder_input_ids=labels_input_ids,
             decoder_attention_mask=labels_attention_mask,
-            labels=labels,
+            labels=labels_input_ids,
             return_dict=True
         )
         val_loss = outputs.loss
@@ -109,7 +111,7 @@ class BaselineModel(pl.LightningModule):
                                                num_return_sequences=1
                                                )
 
-        output_sequences, target_seq = self.detokenize(output_sequences), self.detokenize(labels)
+        output_sequences, target_seq = self.detokenize(output_sequences), self.detokenize(labels_input_ids)
         _, bleu_scores = compute_bleu_scores(output_sequences, target_seq)
 
         s = ''

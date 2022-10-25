@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 from transformers import VisionEncoderDecoderModel
-from transformers import BeitConfig, BeitFeatureExtractor
-from transformers import BertTokenizer, BertConfig, GPT2Tokenizer
+from transformers import BeitFeatureExtractor, ViTFeatureExtractor
+from transformers import BertTokenizer, GPT2Tokenizer
 import pytorch_lightning as pl
 from evaluate import compute_bleu_scores
 
@@ -19,11 +19,13 @@ class BaselineModel(pl.LightningModule):
         if image_encoder.lower() == 'beit':
             image_feature_extractor = BeitFeatureExtractor.from_pretrained("microsoft/beit-base-patch16-224-pt22k")
             image_encoder_path = "microsoft/beit-base-patch16-224-pt22k"
+        if image_encoder.lower() == 'vit':
+            image_feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+            image_encoder_path = 'google/vit-base-patch16-224-in21k'
 
         if text_decoder.lower() == 'bert':
             decoder_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
             text_decoder_path = "bert-base-uncased"
-
         if text_decoder.lower() == 'gpt2':
             decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
             text_decoder_path = "gpt2"
@@ -34,11 +36,19 @@ class BaselineModel(pl.LightningModule):
         )
         self.image_feature_extractor = image_feature_extractor
         self.decoder_tokenizer = decoder_tokenizer
-        self.model.config.decoder.is_decoder = True
-        self.model.config.decoder.add_cross_attention = True
+
+        config_encoder = self.model.config.encoder
+        config_decoder = self.model.config.decoder
+        config_decoder.is_decoder = True
+        config_decoder.add_cross_attention = True
         self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
-        self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
+        self.model.config.vocab_size = config_decoder.vocab_size
+
+        if text_decoder_path == 'gpt2':
+            self.decoder_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         self.beam_size = beam_size
+
+        self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
 
         self.save_hyperparameters()
 

@@ -31,10 +31,7 @@ class BaselineTrainer:
             self.dataModule = FlickrDatasetModule(predict_file=predict_file)
         else:
             raise RuntimeError("Incorrect Dataset")
-        self.dataModule.set_encoder_and_decoder_tokenizer(
-            self.model.image_feature_extractor,
-            self.model.decoder_tokenizer
-        )
+        self.dataModule.set_model_variables(self.model)
 
         early_stopping_callback = EarlyStopping(monitor='loss/train',
                                                 mode='min',

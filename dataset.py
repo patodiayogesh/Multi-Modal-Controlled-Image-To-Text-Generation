@@ -112,21 +112,29 @@ class FlickrDatasetModule(pl.LightningDataModule):
     def _set_decoder_tokenizer(self, decoder_tokenizer):
         self.decoder_tokenizer = decoder_tokenizer
 
-    def set_encoder_and_decoder_tokenizer(self, image_feature_extractor, decoder_tokenizer):
-        self._set_image_feature_extractor(image_feature_extractor)
-        self._set_decoder_tokenizer(decoder_tokenizer)
+    def _set_model_config(self, config):
+        self.model_config = config
+
+    def set_model_variables(self, model):
+
+        self._set_image_feature_extractor(model.image_feature_extractor)
+        self._set_decoder_tokenizer(model.decoder_tokenizer)
+        self._set_model_config(model.config)
 
     def tokenize_data(self, batch_data):
 
         image_tensors = [t[0] for t in batch_data]
-        captions = [t[1] for t in batch_data]
+        captions = ["{} {} {}".format(self.model_config.decoder_start_token_id,
+                                      t[1],
+                                      self.model_config.pad_token_id)
+                    for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
         labels = self.decoder_tokenizer(
             captions,
             padding="longest",
             truncation=True,
-            max_length=512,
+            max_length=24,
             return_tensors="pt",
         )
 

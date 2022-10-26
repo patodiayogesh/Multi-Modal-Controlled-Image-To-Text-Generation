@@ -22,10 +22,9 @@ class BaselineTrainer:
                  fast_dev,
                  predict):
 
-        if model_ckpt is None:
-            self.model = BaselineModel(image_encoder, text_decoder, freeze_image_encoder)
-        else:
-            self.model = BaselineModel.load_from_checkpoint(model_ckpt)
+        self.model = BaselineModel(image_encoder, text_decoder,
+                                   freeze_image_encoder,
+                                   model_ckpt=model_ckpt)
 
         if dataset == 'flickr30k':
             predict_file = predict if predict != '' else None

@@ -14,6 +14,7 @@ class BaselineModel(pl.LightningModule):
                  text_decoder,
                  freeze_image_encoder=False,
                  beam_size=5,
+                 model_ckpt=None,
                  ):
 
         super(BaselineModel, self).__init__()
@@ -35,13 +36,32 @@ class BaselineModel(pl.LightningModule):
             decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
             text_decoder_path = "gpt2"
 
+        self.image_feature_extractor = image_feature_extractor
+        self.decoder_tokenizer = decoder_tokenizer
+        self.beam_size = beam_size
+
+        if model_ckpt is None or model_ckpt == '':
+            self._define_model( image_encoder_path,
+                                text_decoder_path,
+                                text_decoder,
+                                freeze_image_encoder,
+                                )
+        else:
+            self.model = VisionEncoderDecoderModel.from_pretrained(model_ckpt)
+
+        self.save_hyperparameters()
+
+    def _define_model(self,
+                      image_encoder_path,
+                      text_decoder_path,
+                      text_decoder,
+                      freeze_image_encoder,
+                      ):
+
         self.model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
             image_encoder_path,
             text_decoder_path,
         )
-        self.image_feature_extractor = image_feature_extractor
-        self.decoder_tokenizer = decoder_tokenizer
-
         config_decoder = self.model.config.decoder
         config_decoder.is_decoder = True
         config_decoder.add_cross_attention = True
@@ -55,13 +75,9 @@ class BaselineModel(pl.LightningModule):
             self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
             self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
 
-        self.beam_size = beam_size
-
         if freeze_image_encoder:
             for param in self.model.encoder.base_model.parameters():
                 param.requires_grad = False
-
-        self.save_hyperparameters()
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
@@ -149,7 +165,7 @@ class BaselineModel(pl.LightningModule):
         labels_input_ids = labels.input_ids
         labels_attention_mask = labels.attention_mask
         output_sequences = self.model.generate(inputs,
-                                               max_length=512,
+                                               max_length=12,
                                                num_beams=self.beam_size,
                                                num_return_sequences=1
                                                )

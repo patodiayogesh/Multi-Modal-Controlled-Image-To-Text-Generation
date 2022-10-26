@@ -148,15 +148,13 @@ class BaselineModel(pl.LightningModule):
         inputs, labels = batch
         labels_input_ids = labels.input_ids
         labels_attention_mask = labels.attention_mask
-        output_sequences = self.model(
-            inputs,
-            # decoder_input_ids=labels_input_ids,
-            # decoder_attention_mask=labels_attention_mask,
-            labels=labels_input_ids,
-            return_dict=True
-        )
-        pred_sequences = self.prediction_detokenize(output_sequences)
-        target_sequences = self.prediction_detokenize(labels)
+        output_sequences = self.model.generate(inputs,
+                                               max_length=512,
+                                               num_beams=self.beam_size,
+                                               num_return_sequences=1
+                                               )
+        pred_sequences = self.detokenize(output_sequences)
+        target_sequences = self.detokenize(labels_input_ids)
         _, bleu_score_list = compute_bleu_scores(pred_sequences, target_sequences)
         with open("output.hyp", "a") as f:
             for pred in pred_sequences:

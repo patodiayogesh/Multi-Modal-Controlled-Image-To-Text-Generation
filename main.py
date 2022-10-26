@@ -93,4 +93,8 @@ if __name__ == '__main__':
         args.fast_dev,
         args.predict,
     )
-    trainer.train_model()
+
+    if args.predict == '':
+        trainer.train_model()
+    else:
+        trainer.inference()

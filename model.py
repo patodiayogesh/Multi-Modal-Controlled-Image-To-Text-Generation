@@ -93,8 +93,8 @@ class BaselineModel(pl.LightningModule):
         labels_attention_mask = labels.attention_mask
         outputs = self.model(
             inputs,
-            decoder_input_ids=labels_input_ids,
-            decoder_attention_mask=labels_attention_mask,
+            # decoder_input_ids=labels_input_ids,
+            # decoder_attention_mask=labels_attention_mask,
             labels=labels_input_ids,
             return_dict=True
         )
@@ -109,8 +109,8 @@ class BaselineModel(pl.LightningModule):
         labels_attention_mask = labels.attention_mask
         outputs = self.model(
             inputs,
-            decoder_input_ids=labels_input_ids,
-            decoder_attention_mask=labels_attention_mask,
+            # decoder_input_ids=labels_input_ids,
+            # decoder_attention_mask=labels_attention_mask,
             labels=labels_input_ids,
             return_dict=True
         )

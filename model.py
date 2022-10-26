@@ -71,9 +71,15 @@ class BaselineModel(pl.LightningModule):
             self.decoder_tokenizer.pad_token_id = self.decoder_tokenizer.eos_token_id
             self.model.config.pad_token_id = self.decoder_tokenizer.eos_token_id
             self.model.config.decoder_start_token_id = self.decoder_tokenizer.bos_token_id
+
+            self.end_token = self.decoder_tokenizer.eos_token
+            self.start_token = self.decoder_tokenizer.bos_token
         elif text_decoder == 'bert':
             self.model.config.pad_token_id = self.decoder_tokenizer.pad_token_id
             self.model.config.decoder_start_token_id = self.decoder_tokenizer.cls_token_id
+
+            self.end_token = self.decoder_tokenizer.pad_token
+            self.start_token = self.decoder_tokenizer.cls_token
 
         if freeze_image_encoder:
             for param in self.model.encoder.base_model.parameters():

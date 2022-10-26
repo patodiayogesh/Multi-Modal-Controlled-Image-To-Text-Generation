@@ -56,7 +56,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
                  train_batch_size=16,
                  eval_batch_size=16,
                  transform=transforms.PILToTensor(),
-                 num_workers=12):
+                 num_workers=12,
+                 predict_file=None):
 
         super().__init__()
 
@@ -80,6 +81,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.transform = transform
         self.num_workers = num_workers
+        self.predict_file = predict_file
 
     def setup(self, stage= None):
 
@@ -92,6 +94,17 @@ class FlickrDatasetModule(pl.LightningDataModule):
 
         if stage == 'test':
             self.test_dataset = FlickrDataset(self.test_filenames, self.dataset, self.transform)
+
+        if stage == 'predict':
+            if self.predict_file is None:
+                predict_dataset = FlickrDataset(self.test_filenames, self.dataset, self.transform)
+            elif self.predict_file == 'train':
+                predict_dataset = FlickrDataset(self.train_filenames, self.dataset, self.transform)
+            elif self.predict_file == 'valid':
+                predict_dataset = FlickrDataset(self.val_filenames, self.dataset, self.transform)
+            elif self.predict_file == 'test':
+                predict_dataset = FlickrDataset(self.test_filenames, self.dataset, self.transform)
+            self.predict_dataset = predict_dataset
 
     def _set_image_feature_extractor(self, image_feature_extractor):
         self.image_feature_extractor = image_feature_extractor
@@ -144,4 +157,13 @@ class FlickrDatasetModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             collate_fn=self.tokenize_data
+        )
+
+    def predict_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.predict_dataset,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=self.tokenize_data,
         )

@@ -17,12 +17,19 @@ class BaselineTrainer:
                  image_encoder,
                  text_decoder,
                  dataset,
+                 model_ckpt,
                  freeze_image_encoder,
-                 fast_dev,):
+                 fast_dev,
+                 predict):
 
-        self.model = BaselineModel(image_encoder, text_decoder, freeze_image_encoder)
+        if model_ckpt is None:
+            self.model = BaselineModel(image_encoder, text_decoder, freeze_image_encoder)
+        else:
+            self.model = BaselineModel.load_from_checkpoint(model_ckpt)
+
         if dataset == 'flickr30k':
-            self.dataModule = FlickrDatasetModule()
+            predict_file = predict if predict != '' else None
+            self.dataModule = FlickrDatasetModule(predict_file=predict_file)
         else:
             raise RuntimeError("Incorrect Dataset")
         self.dataModule.set_encoder_and_decoder_tokenizer(
@@ -54,7 +61,7 @@ class BaselineTrainer:
         return
 
     def inference(self):
-        self.trainer.fit(self.model, self.dataModule)
+        self.trainer.predict(self.model, self.dataModule)
 
 
 if __name__ == '__main__':
@@ -63,8 +70,10 @@ if __name__ == '__main__':
     parser.add_argument('--image_encoder', type=str, default='beit', required=False)
     parser.add_argument('--text_decoder', type=str, default='bert', required=False)
     parser.add_argument('--dataset', type=str, default='flickr30k', required=False)
+    parser.add_argument('--model_ckpt', type=str, required=False)
     parser.add_argument('--freeze_image_encoder', type=bool, default=False)
     parser.add_argument('--fast_dev', type=bool, default=False)
+    parser.add_argument('--predict', type=str, default='')
     args = parser.parse_args()
 
     LoggingUtils.setup(LoggingUtils.INFO, 'baselineModel.log')
@@ -79,7 +88,9 @@ if __name__ == '__main__':
         args.image_encoder,
         args.text_decoder,
         args.dataset,
+        args.model_ckpt,
         args.freeze_image_encoder,
-        args.fast_dev
+        args.fast_dev,
+        args.predict,
     )
     trainer.train_model()

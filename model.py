@@ -143,6 +143,28 @@ class BaselineModel(pl.LightningModule):
             pred.append(self.decoder_tokenizer.decode(seq, skip_special_tokens=True))
         return pred
 
+    def predict_step(self, batch, batch_idx=-1, dataloader_idx=None):
+
+        inputs, labels = batch
+        labels_input_ids = labels.input_ids
+        labels_attention_mask = labels.attention_mask
+        output_sequences = self.model(
+            inputs,
+            # decoder_input_ids=labels_input_ids,
+            # decoder_attention_mask=labels_attention_mask,
+            labels=labels_input_ids,
+            return_dict=True
+        )
+        pred_sequences = self.prediction_detokenize(output_sequences)
+        target_sequences = self.prediction_detokenize(labels)
+        _, bleu_score_list = compute_bleu_scores(pred_sequences, target_sequences)
+        with open("output.hyp", "a") as f:
+            for pred in pred_sequences:
+                f.write(f"{pred}\n")
+        with open("output.ref", "a") as f:
+            for target in target_sequences:
+                f.write(f"{target}\n")
+
     def on_save_checkpoint(self, checkpoint):
 
         version_number = self.trainer.logger.version

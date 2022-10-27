@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from transformers import VisionEncoderDecoderModel
 from transformers import BeitFeatureExtractor, ViTFeatureExtractor
-from transformers import BertTokenizer, GPT2Tokenizer
+from transformers import BertTokenizer, GPT2Tokenizer, GPT2TokenizerFast
 import pytorch_lightning as pl
 from evaluate import compute_bleu_scores
 
@@ -22,39 +22,44 @@ class BaselineModel(pl.LightningModule):
         image_encoder = image_encoder.lower()
         text_decoder = text_decoder.lower()
 
-        if image_encoder == 'beit':
-            image_feature_extractor = BeitFeatureExtractor.from_pretrained("microsoft/beit-base-patch16-224-pt22k")
-            image_encoder_path = "microsoft/beit-base-patch16-224-pt22k"
-        if image_encoder == 'vit':
-            image_feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
-            image_encoder_path = 'google/vit-base-patch16-224-in21k'
+        # if image_encoder == 'beit':
+        #     image_feature_extractor = BeitFeatureExtractor.from_pretrained("microsoft/beit-base-patch16-224-pt22k")
+        #     image_encoder_path = "microsoft/beit-base-patch16-224-pt22k"
+        # if image_encoder == 'vit':
+        #     image_feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+        #     image_encoder_path = 'google/vit-base-patch16-224-in21k'
+        #
+        # if text_decoder == 'bert':
+        #     decoder_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        #     text_decoder_path = "bert-base-uncased"
+        # if text_decoder == 'gpt2':
+        #     decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+        #     text_decoder_path = "gpt2"
+        #
+        # self.image_feature_extractor = image_feature_extractor
+        # self.decoder_tokenizer = decoder_tokenizer
+        # self.beam_size = beam_size
+        #
+        # if model_ckpt is None or model_ckpt == '':
+        #     self._define_model( image_encoder_path,
+        #                         text_decoder_path,
+        #                         text_decoder,
+        #                         freeze_image_encoder,
+        #                         )
+        # else:
+        #     self.model = VisionEncoderDecoderModel.from_pretrained(model_ckpt)
+        #     if text_decoder == 'gpt2':
+        #         self.decoder_tokenizer.pad_token_id = self.decoder_tokenizer.eos_token_id
+        #         self.end_token = self.decoder_tokenizer.eos_token
+        #         self.start_token = self.decoder_tokenizer.bos_token
+        #     elif text_decoder == 'bert':
+        #         self.end_token = self.decoder_tokenizer.pad_token
+        #         self.start_token = self.decoder_tokenizer.cls_token
 
-        if text_decoder == 'bert':
-            decoder_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-            text_decoder_path = "bert-base-uncased"
-        if text_decoder == 'gpt2':
-            decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-            text_decoder_path = "gpt2"
-
-        self.image_feature_extractor = image_feature_extractor
-        self.decoder_tokenizer = decoder_tokenizer
+        self.model = VisionEncoderDecoderModel.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+        self.decoder_tokenizer = GPT2TokenizerFast.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+        self.image_feature_extractor = ViTFeatureExtractor.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
         self.beam_size = beam_size
-
-        if model_ckpt is None or model_ckpt == '':
-            self._define_model( image_encoder_path,
-                                text_decoder_path,
-                                text_decoder,
-                                freeze_image_encoder,
-                                )
-        else:
-            self.model = VisionEncoderDecoderModel.from_pretrained(model_ckpt)
-            if text_decoder == 'gpt2':
-                self.decoder_tokenizer.pad_token_id = self.decoder_tokenizer.eos_token_id
-                self.end_token = self.decoder_tokenizer.eos_token
-                self.start_token = self.decoder_tokenizer.bos_token
-            elif text_decoder == 'bert':
-                self.end_token = self.decoder_tokenizer.pad_token
-                self.start_token = self.decoder_tokenizer.cls_token
 
         self.save_hyperparameters()
 

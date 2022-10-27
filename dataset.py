@@ -125,17 +125,14 @@ class FlickrDatasetModule(pl.LightningDataModule):
     def tokenize_data(self, batch_data):
 
         image_tensors = [t[0] for t in batch_data]
-        captions = ["{} {} {}".format(self.start_token,
-                                      t[1],
-                                      self.end_token)
-                    for t in batch_data]
+        captions = [t[1] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
         labels = self.decoder_tokenizer(
             captions,
             padding="longest",
             truncation=True,
-            max_length=24,
+            #max_length=24,
             return_tensors="pt",
         )
 

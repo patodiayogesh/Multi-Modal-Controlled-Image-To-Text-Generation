@@ -48,6 +48,13 @@ class BaselineModel(pl.LightningModule):
                                 )
         else:
             self.model = VisionEncoderDecoderModel.from_pretrained(model_ckpt)
+            if text_decoder == 'gpt2':
+                self.decoder_tokenizer.pad_token_id = self.decoder_tokenizer.eos_token_id
+                self.end_token = self.decoder_tokenizer.eos_token
+                self.start_token = self.decoder_tokenizer.bos_token
+            elif text_decoder == 'bert':
+                self.end_token = self.decoder_tokenizer.pad_token
+                self.start_token = self.decoder_tokenizer.cls_token
 
         self.save_hyperparameters()
 
@@ -61,10 +68,12 @@ class BaselineModel(pl.LightningModule):
         self.model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
             image_encoder_path,
             text_decoder_path,
+            tie_encoder_decoder=True
         )
+
         config_decoder = self.model.config.decoder
-        config_decoder.is_decoder = True
-        config_decoder.add_cross_attention = True
+        # config_decoder.is_decoder = True
+        # config_decoder.add_cross_attention = True
         self.model.config.vocab_size = config_decoder.vocab_size
 
         if text_decoder == 'gpt2':
@@ -80,6 +89,8 @@ class BaselineModel(pl.LightningModule):
 
             self.end_token = self.decoder_tokenizer.pad_token
             self.start_token = self.decoder_tokenizer.cls_token
+
+        self.model.config.eos_token_id = self.decoder_tokenizer.pad_token_id
 
         if freeze_image_encoder:
             for param in self.model.encoder.base_model.parameters():

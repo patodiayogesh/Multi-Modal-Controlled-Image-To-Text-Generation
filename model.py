@@ -59,6 +59,8 @@ class BaselineModel(pl.LightningModule):
         self.model = VisionEncoderDecoderModel.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
         self.decoder_tokenizer = GPT2TokenizerFast.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
         self.image_feature_extractor = ViTFeatureExtractor.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
+        self.start_token = None
+        self.end_token =None
         self.beam_size = beam_size
 
         self.save_hyperparameters()

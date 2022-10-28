@@ -35,8 +35,8 @@ class FlickrDataset(Dataset):
         caption = self.captions[index]
         image_filename = self.images[index]
         img = Image.open(self.image_dir + image_filename)
-        if self.transform:
-            img = self.transform(img)
+        # if self.transform:
+        #     img = self.transform(img)
         return img, caption
 
 
@@ -82,6 +82,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
         self.transform = transform
         self.num_workers = num_workers
         self.predict_file = predict_file
+        self.train_dataset = FlickrDataset(self.train_filenames, self.dataset, self.transform)
 
     def setup(self, stage= None):
 

@@ -44,10 +44,11 @@ if __name__ == '__main__':
 
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
-    model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
-        "google/vit-base-patch16-224-in21k",
-        "gpt2")
-    _define_model(model, tokenizer)
+    # model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
+    #     "google/vit-base-patch16-224-in21k",
+    #     "gpt2")
+    # _define_model(model, tokenizer)
+    model = VisionEncoderDecoderModel.from_pretrained('vit-gpt2-scratch')
 
     dataset = FlickrDatasetModule()
     dataset.image_feature_extractor = feature_extractor
@@ -55,33 +56,53 @@ if __name__ == '__main__':
     train_dataloader = dataset.train_dataloader()
     model.to(device)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, eps=1e-8, weight_decay=0.01)
+    def train():
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, eps=1e-8, weight_decay=0.01)
 
-    steps = 0
-    model.train()
-    for x,y in train_dataloader:
-        # generated_ids = model(x)
-        # generated_text = tokeniz
-        # er.batch_decode(generated_ids, skip_special_tokens=True)
-        # labels = tokenizer.batch_decode(y.input_ids, skip_special_tokens=True)
-        # model_output=model(x)
-        x = x.to(device)
-        input_ids = y.input_ids
-        input_ids = input_ids.to(device)
-        outputs = model(x,
-                        labels=input_ids,
-                        return_dict=True)
-        loss = outputs.loss
-        print(f"Steps: {steps}, Loss: {loss.item()}")
+        steps = 0
+        model.train()
+        for x,y in train_dataloader:
+            # generated_ids = model(x)
+            # generated_text = tokeniz
+            # er.batch_decode(generated_ids, skip_special_tokens=True)
+            # labels = tokenizer.batch_decode(y.input_ids, skip_special_tokens=True)
+            # model_output=model(x)
+            x = x.to(device)
+            input_ids = y.input_ids
+            input_ids = input_ids.to(device)
+            outputs = model(x,
+                            labels=input_ids,
+                            return_dict=True)
+            loss = outputs.loss
+            print(f"Steps: {steps}, Loss: {loss.item()}")
 
-        model.zero_grad()
-        loss.backward()
-        optimizer.step()
-        steps += 1
-        if steps % 10 == 0:
-            generated_ids = model.generate(x)
-            print(tokenizer.batch_decode(generated_ids,skip_special_tokens=True))
-        if steps % 20 == 0:
-            model.save_pretrained('vit-gpt2-scratch')
-    model.save_pretrained('vit-gpt2-scratch')
+            model.zero_grad()
+            loss.backward()
+            optimizer.step()
+            steps += 1
+            if steps % 10 == 0:
+                generated_ids = model.generate(x)
+                print(tokenizer.batch_decode(generated_ids,skip_special_tokens=True))
+            if steps % 20 == 0:
+                model.save_pretrained('vit-gpt2-scratch')
+        model.save_pretrained('vit-gpt2-scratch')
+
+    def predict():
+        for x, y in train_dataloader:
+            x = x.to(device)
+            input_ids = y.input_ids
+            input_ids = input_ids.to(device)
+            generated_ids = model(x)
+            pred_sequences = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            target_sequences = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+            with open("output.hyp", "a") as f:
+                for pred in pred_sequences:
+                    f.write(f"{pred}\n")
+            with open("output.ref", "a") as f:
+                for target in target_sequences:
+                    f.write(f"{target}\n")
+
+    predict()
+
+
 

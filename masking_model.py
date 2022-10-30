@@ -55,7 +55,6 @@ class MaskingModel(nn.Module):
           decoder_hidden_states=decoder_outputs.hidden_states,
           decoder_attentions=decoder_outputs.attentions,
           cross_attentions=decoder_outputs.cross_attentions,
-          encoder_last_hidden_state=encoded_outputs.last_hidden_state,
-          encoder_hidden_states=encoded_outputs.hidden_states,
-          encoder_attentions=encoded_outputs.attentions,
+          encoder_last_hidden_state=outputs_concantentated,
+          encoder_attentions=attention_mask,
       )

@@ -29,6 +29,7 @@ class Trainer:
                                           self.dataset.train_dataloader())
             val_loss = self.model.test(epoch,
                                        self.dataset.val_dataloader())
+            self.model.lr_scheduler.step()
 
             if val_loss >= prev_loss:
                 if patience >= self.patience:

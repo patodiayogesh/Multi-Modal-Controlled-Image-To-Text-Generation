@@ -6,6 +6,35 @@ from collections import defaultdict
 import random
 import pytorch_lightning as pl
 
+class FlickrPredictionDataset(Dataset):
+
+    def __init__(self,
+                 image_files,
+                 dataset,
+                 transform=None,
+                 ):
+
+        self.image_dir = 'datasets/flickr30k_images/'
+        self.images, self.captions = [], []
+        for image in image_files:
+            self.images.append(image)
+            self.captions.append(dataset[image])
+        self.unique_images = image_files
+        self.transform = transform
+
+
+    def __len__(self):
+
+        return len(self.unique_images)
+
+    def __getitem__(self, index):
+
+        caption = self.captions[index]
+        image_filename = self.images[index]
+        img = Image.open(self.image_dir + image_filename)
+        if self.transform:
+            img = self.transform(img)
+        return img, caption, image_filename
 
 class FlickrDataset(Dataset):
 
@@ -55,7 +84,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
                  train_batch_size=16,
                  eval_batch_size=16,
                  transform=transforms.PILToTensor(),
-                 num_workers=40,
+                 num_workers=12,
                  predict_file=None):
 
         super().__init__()
@@ -96,14 +125,14 @@ class FlickrDatasetModule(pl.LightningDataModule):
 
         if stage == 'predict':
             if self.predict_file is None:
-                predict_dataset = FlickrDataset(self.test_filenames, self.dataset, self.transform)
+                file_names = self.test_filenames
             elif self.predict_file == 'train':
-                predict_dataset = FlickrDataset(self.train_filenames, self.dataset, self.transform)
+                file_names = self.train_filenames
             elif self.predict_file == 'valid':
-                predict_dataset = FlickrDataset(self.val_filenames, self.dataset, self.transform)
+                file_names = self.val_filenames
             elif self.predict_file == 'test':
-                predict_dataset = FlickrDataset(self.test_filenames, self.dataset, self.transform)
-            self.predict_dataset = predict_dataset
+                file_names = self.test_filenames
+            self.predict_dataset = FlickrPredictionDataset(file_names, self.dataset, self.transform)
 
     def _set_image_feature_extractor(self, image_feature_extractor):
         self.image_feature_extractor = image_feature_extractor
@@ -136,6 +165,15 @@ class FlickrDatasetModule(pl.LightningDataModule):
         )
 
         return image_encodings, labels
+
+    def prediction_tokenization(self, batch_data):
+
+        image_tensors = [t[0] for t in batch_data]
+        captions = [t[1] for t in batch_data]
+        image_filenames = [t[2] for t in batch_data]
+
+        image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
+        return image_encodings, captions, image_filenames
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -170,5 +208,5 @@ class FlickrDatasetModule(pl.LightningDataModule):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=self.tokenize_data,
+            collate_fn=self.prediction_tokenization,
         )

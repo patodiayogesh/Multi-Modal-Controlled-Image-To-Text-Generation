@@ -121,7 +121,8 @@ class BaselineModel:
         return total_loss / (batch_idx + 1)
 
     def predict(self,
-                dataloader):
+                dataloader,
+                filename):
 
         self.model.eval()
         progress_bar = tqdm(dataloader)
@@ -135,20 +136,21 @@ class BaselineModel:
             reference_captions = batch_data[1]
             image_file_name = batch_data[2]
 
-            generated_ids = self.model.generate(image_pixel_values)
+            generated_ids = self.model.generate(image_pixel_values,
+                                                num_beams=self.beam_size)
             generated_captions = self.decoder_tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
             bleu_scores += bleu_score_list
             progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
-            with open("output.hyp", "a") as f:
+            with open(f"{filename}_output.hyp", "a") as f:
                 for pred in generated_captions:
                     f.write(f"{pred}\n")
-            with open("output.ref", "a") as f:
+            with open(f"{filename}_output.ref", "a") as f:
                 for target in reference_captions:
                     f.write(f"{target}\n")
 
-            if batch_idx % 30 == 0:
+            if batch_idx % 10 == 0:
                 wandb_table.add_data(
                     wandb.Image(f'datasets/flickr30k_images/{image_file_name[0]}'),
                     generated_captions[0],
@@ -157,7 +159,11 @@ class BaselineModel:
                 )
 
         wandb.log({'Bleu Score': sum(bleu_scores) / len(bleu_scores),
-                   'Prediction Samples': wandb_table
+                   f'{filename} Prediction Samples': wandb_table,
+                   f'{filename} Scores Plot': wandb.plot.histogram(
+                       wandb.Table(data=[[s] for s in bleu_scores],
+                                   columns=['bleu score'])
+                   )
                    })
 
 

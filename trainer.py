@@ -6,7 +6,7 @@ class Trainer:
                  model,
                  dataset,
                  epochs=20,
-                 patience=2):
+                 patience=3):
 
         self.model = model
         self.dataset = dataset
@@ -40,6 +40,7 @@ class Trainer:
                 patience = 0
                 best_model = copy.deepcopy(self.model)
                 best_epoch = epoch
+            prev_loss = val_loss
 
             self.model.save_pretrained(f'{self.checkpoint_path}epoch_{epoch}/')
 
@@ -49,6 +50,7 @@ class Trainer:
 
         self.dataset.setup('predict')
         dataloader = self.dataset.predict_dataloader()
-        self.model.predict(dataloader)
+        self.model.predict(dataloader,
+                           filename=self.dataset.predict_file)
 
 

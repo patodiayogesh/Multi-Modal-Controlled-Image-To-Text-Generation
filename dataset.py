@@ -1,4 +1,3 @@
-import torchvision
 from torch.utils.data import Dataset
 import torch
 from PIL import Image
@@ -56,7 +55,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
                  train_batch_size=16,
                  eval_batch_size=16,
                  transform=transforms.PILToTensor(),
-                 num_workers=12,
+                 num_workers=40,
                  predict_file=None):
 
         super().__init__()

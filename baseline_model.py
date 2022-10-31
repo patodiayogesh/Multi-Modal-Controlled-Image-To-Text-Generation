@@ -34,7 +34,7 @@ class BaselineModel:
             self.model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
                 image_encoder,
                 text_decoder)
-            self._set_bart_decoder(text_decoder)
+            self._set_bart_decoder()
         else:
             self.model = VisionEncoderDecoderModel.from_pretrained(model_ckpt)
         self.model.to(self.device)

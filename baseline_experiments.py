@@ -11,7 +11,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model = BaselineModel(args.model_ckpt)
-    dataset = FlickrDatasetModule(args.predict)
+    dataset = FlickrDatasetModule(predict_file=args.predict)
     trainer = Trainer(model, dataset)
     if args.predict:
         trainer.inference()

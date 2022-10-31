@@ -46,6 +46,7 @@ class Trainer:
 
     def inference(self):
 
+        self.dataset.setup('predict')
         dataloader = self.dataset.predict_dataloader()
         self.model.predict(dataloader)
 

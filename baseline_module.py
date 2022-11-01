@@ -26,7 +26,7 @@ class BaselineModel:
         text_decoder = "facebook/bart-base"
 
         # Image and Text Tokenizers
-        self.decoder_tokenizer = BartTokenizer.from_pretrained(text_decoder)
+        self.tokenizer = BartTokenizer.from_pretrained(text_decoder)
         self.image_feature_extractor = ViTFeatureExtractor.from_pretrained(image_encoder)
 
         # Model Initialization
@@ -58,9 +58,9 @@ class BaselineModel:
     def _set_bart_decoder(self):
 
         model_config = self.model.config
-        model_config.pad_token_id = self.decoder_tokenizer.pad_token_id
-        model_config.decoder_start_token_id = self.decoder_tokenizer.bos_token_id
-        model_config.eos_token_id = self.decoder_tokenizer.eos_token_id
+        model_config.pad_token_id = self.tokenizer.pad_token_id
+        model_config.decoder_start_token_id = self.tokenizer.bos_token_id
+        model_config.eos_token_id = self.tokenizer.eos_token_id
         model_config.vocab_size = model_config.decoder.vocab_size
 
     def train(self,
@@ -137,8 +137,9 @@ class BaselineModel:
             image_file_name = batch_data[2]
 
             generated_ids = self.model.generate(image_pixel_values,
-                                                num_beams=self.beam_size)
-            generated_captions = self.decoder_tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+                                                num_beams=self.beam_size,
+                                                max_length=24)
+            generated_captions = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
             bleu_scores += bleu_score_list
             progress_bar.set_postfix(bleu_score=avg_bleu_score)

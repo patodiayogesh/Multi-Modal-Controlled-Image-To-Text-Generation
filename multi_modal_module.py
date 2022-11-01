@@ -137,12 +137,19 @@ class MultiModalModel:
 
         for batch_idx, batch_data in enumerate(progress_bar):
             image_pixel_values = batch_data[0].to(self.device)
-            reference_captions = batch_data[1]
-            image_file_name = batch_data[2]
+            input_encodings = batch_data[1].to(self.device)
+            input_ids = input_encodings.input_ids
+            input_attention_mask = input_encodings.attention_mask
+            reference_captions = batch_data[2]
+            image_file_name = batch_data[3]
 
-            generated_ids = self.model.generate(image_pixel_values,
-                                                num_beams=self.beam_size)
-            generated_captions = self.decoder_tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            image_embeddings = self.image_model(image_pixel_values).last_hidden_state
+            generated_ids = self.model.generate(input_ids=input_ids,
+                                                attention_mask=input_attention_mask,
+                                                image_embeddings=image_embeddings,
+                                                num_beams=self.beam_size,
+                                                max_length=24)
+            generated_captions = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
             bleu_scores += bleu_score_list
             progress_bar.set_postfix(bleu_score=avg_bleu_score)

@@ -6,6 +6,7 @@ from collections import defaultdict
 import random
 import pytorch_lightning as pl
 
+
 class FlickrPredictionDataset(Dataset):
 
     def __init__(self,
@@ -22,7 +23,6 @@ class FlickrPredictionDataset(Dataset):
         self.unique_images = image_files
         self.transform = transform
 
-
     def __len__(self):
 
         return len(self.images)
@@ -35,6 +35,7 @@ class FlickrPredictionDataset(Dataset):
         if self.transform:
             img = self.transform(img)
         return img, caption, image_filename
+
 
 class FlickrDataset(Dataset):
 
@@ -52,7 +53,6 @@ class FlickrDataset(Dataset):
                 self.images.append(image)
         self.unique_images = image_files
         self.transform = transform
-
 
     def __len__(self):
 
@@ -86,7 +86,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
                  transform=transforms.PILToTensor(),
                  num_workers=12,
                  predict_file=None,
-                 multi_modal=False):
+                 multi_modal=False,
+                 mask=False):
 
         super().__init__()
 
@@ -112,8 +113,9 @@ class FlickrDatasetModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.predict_file = predict_file
         self.multi_modal = multi_modal
+        self.mask = mask
 
-    def setup(self, stage= None):
+    def setup(self, stage=None):
 
         if stage == 'fit' or stage is None:
             self.train_dataset = FlickrDataset(self.train_filenames, self.dataset, self.transform)
@@ -139,8 +141,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
     def _set_image_feature_extractor(self, image_feature_extractor):
         self.image_feature_extractor = image_feature_extractor
 
-    def _set_decoder_tokenizer(self, decoder_tokenizer):
-        self.decoder_tokenizer = decoder_tokenizer
+    def _set_tokenizer(self, tokenizer):
+        self.tokenizer = tokenizer
 
     def _set_tokens(self, model):
         self.start_token = model.start_token
@@ -149,8 +151,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
     def set_model_variables(self, model):
 
         self._set_image_feature_extractor(model.image_feature_extractor)
-        self._set_decoder_tokenizer(model.decoder_tokenizer)
-        #self._set_tokens(model)
+        self._set_tokenizer(model.tokenizer)
 
     def tokenize_data(self, batch_data):
 
@@ -158,14 +159,18 @@ class FlickrDatasetModule(pl.LightningDataModule):
         captions = [t[1] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
-        caption_encodings = self.decoder_tokenizer(
+        caption_encodings = self.tokenizer(
             captions,
             padding="longest",
             truncation=True,
             return_tensors="pt",
         )
         if self.multi_modal:
-            input_text_encodings = caption_encodings
+            if self.mask:
+                input_text = ['' for _ in batch_data]
+                input_text_encodings = self.tokenizer(input_text, return_tensors='pt')
+            else:
+                input_text_encodings = caption_encodings
             labels = caption_encodings
             return image_encodings, input_text_encodings, labels
         else:
@@ -185,7 +190,10 @@ class FlickrDatasetModule(pl.LightningDataModule):
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
         if self.multi_modal:
-            return image_encodings, None, captions, image_filenames
+            input_text = ['' for _ in batch_data]
+            input_text_encodings = self.tokenizer(input_text,
+                                                  return_tensors='pt')
+            return image_encodings, input_text_encodings, captions, image_filenames
         else:
             return image_encodings, captions, image_filenames
 

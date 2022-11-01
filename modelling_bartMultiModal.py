@@ -313,16 +313,17 @@ if __name__ == '__main__':
     bartConfig = BartConfig()
     model = BartMultiModalGenerationModel.from_pretrained('facebook/bart-base')
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-    input_ids = tokenizer.encode(
-        ['This is an image of a test sentence which is very long and does not stop please make it stop'],
+    input_ids = tokenizer(
+        ['<mask>'],
         padding='longest',
-        return_tensors='pt')
-    # o = model(input_ids=input_ids,
-    #           image_embeddings = img_embed[0],
-    #           labels=input_ids)
+        return_tensors='pt').input_ids
+    o = model(input_ids=input_ids,
+              image_embeddings = img_embed.last_hidden_state,
+              labels=input_ids)
     o = model.generate(input_ids=input_ids,
-                       image_embeddings=img_embed[0],
+                       image_embeddings=img_embed.last_hidden_state,
                        num_beams=6
                        )
-    text = tokenizer.decode(o[0])
+    text = tokenizer.batch_decode(o,
+                                  skip_special_tokens=True)
     print(text)

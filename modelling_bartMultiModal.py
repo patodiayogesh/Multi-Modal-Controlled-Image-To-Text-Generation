@@ -130,12 +130,16 @@ class BartMultiModalModel(BartModel):
         image_text_embeddings = torch.concat((image_embeddings,
                                               encoder_outputs.last_hidden_state),
                                              axis=1)
+        if torch.cuda.is_available():
+            device = 'cuda:0'
+        else:
+            device = 'cpu'
         if attention_mask is None:
             extended_attention_mask = torch.ones((image_text_embeddings.size()[0],
-                                                  image_text_embeddings.size()[1]))
+                                                  image_text_embeddings.size()[1])).to(device)
         else:
             image_attention_mask = torch.ones((image_embeddings.size()[0],
-                                               image_embeddings.size()[1]))
+                                               image_embeddings.size()[1])).to(device)
             extended_attention_mask = torch.concat((image_attention_mask,
                                                     attention_mask),
                                                    axis=1)

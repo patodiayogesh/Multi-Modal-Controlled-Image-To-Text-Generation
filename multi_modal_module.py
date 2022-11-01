@@ -31,6 +31,7 @@ class MultiModalModel:
         self.image_feature_extractor = ViTFeatureExtractor.from_pretrained(image_encoder)
 
         self.image_model = ViTModel.from_pretrained(image_encoder)
+        self.image_model.to(self.device)
 
         # Model Initialization
         if model_ckpt is None:
@@ -52,7 +53,8 @@ class MultiModalModel:
 
         # Wandb
         self.log_freq = 10
-        wandb.init(project='multi-modal-image-caption-generation')
+        wandb.init(project='multi-modal-image-caption-generation',
+                   entity='multi-modal-image-caption-generation')
         wandb.watch(self.model, self.log_freq)
 
     def train(self,

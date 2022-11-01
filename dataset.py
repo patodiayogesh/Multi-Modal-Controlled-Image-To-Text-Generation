@@ -25,7 +25,7 @@ class FlickrPredictionDataset(Dataset):
 
     def __len__(self):
 
-        return len(self.unique_images)
+        return len(self.images)
 
     def __getitem__(self, index):
 
@@ -56,7 +56,7 @@ class FlickrDataset(Dataset):
 
     def __len__(self):
 
-        return len(self.unique_images)
+        return len(self.images)
 
     def __getitem__(self, index):
 
@@ -85,7 +85,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
                  eval_batch_size=16,
                  transform=transforms.PILToTensor(),
                  num_workers=12,
-                 predict_file=None):
+                 predict_file=None,
+                 multi_modal=False):
 
         super().__init__()
 
@@ -110,6 +111,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
         self.transform = transform
         self.num_workers = num_workers
         self.predict_file = predict_file
+        self.multi_modal = multi_modal
 
     def setup(self, stage= None):
 
@@ -156,24 +158,36 @@ class FlickrDatasetModule(pl.LightningDataModule):
         captions = [t[1] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
-        labels = self.decoder_tokenizer(
+        caption_encodings = self.decoder_tokenizer(
             captions,
             padding="longest",
             truncation=True,
-            #max_length=24,
             return_tensors="pt",
         )
-
-        return image_encodings, labels
+        if self.multi_modal:
+            input_text_encodings = caption_encodings
+            labels = caption_encodings
+            return image_encodings, input_text_encodings, labels
+        else:
+            return image_encodings, caption_encodings
 
     def prediction_tokenization(self, batch_data):
+
+        '''
+
+        :param batch_data: Each sample is (Image Tensor, Captions, Filename)
+        :return: (Image Pixel Values, Input Text Encodings, Label Text Encodings, Filename)
+        '''
 
         image_tensors = [t[0] for t in batch_data]
         captions = [t[1] for t in batch_data]
         image_filenames = [t[2] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
-        return image_encodings, captions, image_filenames
+        if self.multi_modal:
+            return image_encodings, None, captions, image_filenames
+        else:
+            return image_encodings, captions, image_filenames
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(

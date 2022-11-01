@@ -1,5 +1,5 @@
 from trainer import Trainer
-from baseline_model import BaselineModel
+from baseline_module import BaselineModel
 from dataset import FlickrDatasetModule
 import argparse
 

@@ -102,27 +102,28 @@ class MultiModalModel:
         step = 'Val' if validation else 'Test'
         total_loss = 0.0
         progress_bar = tqdm(dataloader)
-        for batch_idx, batch_data in enumerate(progress_bar):
-            progress_bar.set_description(f'{step} Epoch {epoch}')
-            image_pixel_values = batch_data[0].to(self.device)
-            input_encodings = batch_data[1].to(self.device)
-            input_ids = input_encodings.input_ids
-            input_attention_mask = input_encodings.attention_mask
-            label_input_ids = batch_data[2].input_ids.to(self.device)
+        with torch.no_grad():
+            for batch_idx, batch_data in enumerate(progress_bar):
+                progress_bar.set_description(f'{step} Epoch {epoch}')
+                image_pixel_values = batch_data[0].to(self.device)
+                input_encodings = batch_data[1].to(self.device)
+                input_ids = input_encodings.input_ids
+                input_attention_mask = input_encodings.attention_mask
+                label_input_ids = batch_data[2].input_ids.to(self.device)
 
-            image_embeddings = self.image_model(image_pixel_values).last_hidden_state
-            outputs = self.model(
-                input_ids=input_ids,
-                attention_mask=input_attention_mask,
-                image_embeddings=image_embeddings,
-                labels=label_input_ids,
-                return_dict=True,
-            )
-            loss = outputs.loss.item()
-            progress_bar.set_postfix(loss=loss)
-            total_loss += loss
-            if batch_idx % self.log_freq == 0:
-                wandb.log({loss_name: loss})
+                image_embeddings = self.image_model(image_pixel_values).last_hidden_state
+                outputs = self.model(
+                    input_ids=input_ids,
+                    attention_mask=input_attention_mask,
+                    image_embeddings=image_embeddings,
+                    labels=label_input_ids,
+                    return_dict=True,
+                )
+                loss = outputs.loss.item()
+                progress_bar.set_postfix(loss=loss)
+                total_loss += loss
+                if batch_idx % self.log_freq == 0:
+                    wandb.log({loss_name: loss})
 
         return total_loss / (batch_idx + 1)
 
@@ -136,40 +137,40 @@ class MultiModalModel:
         bleu_scores = []
         columns = ['Image', 'Generated Caption', 'Reference Captions', 'Bleu Score']
         wandb_table = wandb.Table(columns=columns)
+        with torch.no_grad():
+            for batch_idx, batch_data in enumerate(progress_bar):
+                image_pixel_values = batch_data[0].to(self.device)
+                input_encodings = batch_data[1].to(self.device)
+                input_ids = input_encodings.input_ids
+                input_attention_mask = input_encodings.attention_mask
+                reference_captions = batch_data[2]
+                image_file_name = batch_data[3]
 
-        for batch_idx, batch_data in enumerate(progress_bar):
-            image_pixel_values = batch_data[0].to(self.device)
-            input_encodings = batch_data[1].to(self.device)
-            input_ids = input_encodings.input_ids
-            input_attention_mask = input_encodings.attention_mask
-            reference_captions = batch_data[2]
-            image_file_name = batch_data[3]
+                image_embeddings = self.image_model(image_pixel_values).last_hidden_state
+                generated_ids = self.model.generate(input_ids=input_ids,
+                                                    attention_mask=input_attention_mask,
+                                                    image_embeddings=image_embeddings,
+                                                    num_beams=self.beam_size,
+                                                    max_length=24)
+                generated_captions = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+                avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
+                bleu_scores += bleu_score_list
+                progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
-            image_embeddings = self.image_model(image_pixel_values).last_hidden_state
-            generated_ids = self.model.generate(input_ids=input_ids,
-                                                attention_mask=input_attention_mask,
-                                                image_embeddings=image_embeddings,
-                                                num_beams=self.beam_size,
-                                                max_length=24)
-            generated_captions = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-            avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
-            bleu_scores += bleu_score_list
-            progress_bar.set_postfix(bleu_score=avg_bleu_score)
+                with open(f"{filename}_output.hyp", "a") as f:
+                    for pred in generated_captions:
+                        f.write(f"{pred}\n")
+                with open(f"{filename}_output.ref", "a") as f:
+                    for target in reference_captions:
+                        f.write(f"{target}\n")
 
-            with open(f"{filename}_output.hyp", "a") as f:
-                for pred in generated_captions:
-                    f.write(f"{pred}\n")
-            with open(f"{filename}_output.ref", "a") as f:
-                for target in reference_captions:
-                    f.write(f"{target}\n")
-
-            if batch_idx % 10 == 0:
-                wandb_table.add_data(
-                    wandb.Image(f'datasets/flickr30k_images/{image_file_name[0]}'),
-                    generated_captions[0],
-                    reference_captions[0],
-                    bleu_score_list[0]
-                )
+                if batch_idx % 10 == 0:
+                    wandb_table.add_data(
+                        wandb.Image(f'datasets/flickr30k_images/{image_file_name[0]}'),
+                        generated_captions[0],
+                        reference_captions[0],
+                        bleu_score_list[0]
+                    )
 
         wandb.log({'Bleu Score': sum(bleu_scores) / len(bleu_scores),
                    f'{filename} Prediction Samples': wandb_table,

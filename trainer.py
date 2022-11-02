@@ -49,7 +49,7 @@ class Trainer:
 
             self.model.save_pretrained(f'{self.checkpoint_path}epoch_{epoch}/')
 
-        best_model.model_save_pretrained(f'{self.checkpoint_path}best_epoch_{best_epoch}/')
+        best_model.save_pretrained(f'{self.checkpoint_path}best_epoch_{best_epoch}/')
 
     def inference(self):
 

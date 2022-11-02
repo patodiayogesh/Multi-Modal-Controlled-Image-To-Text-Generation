@@ -10,7 +10,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='MultiModal')
     parser.add_argument('--dataset', type=str, default='flickr')
     parser.add_argument('--multi_modal', type=bool, default=True)
-    parser.add_argument('--mask', type=str, default='True')
+    parser.add_argument('--mask', type=str, default='empty', choices=['empty', 'epoch_aware_mask'])
     parser.add_argument('--model_ckpt', type=str, required=False)
     parser.add_argument('--predict', type=str, default=None)
 

@@ -32,6 +32,7 @@ class MultiModalModel:
 
         self.image_model = ViTModel.from_pretrained(image_encoder)
         self.image_model.to(self.device)
+        self.image_model.eval()
 
         # Model Initialization
         if model_ckpt is None:
@@ -174,11 +175,16 @@ class MultiModalModel:
 
         wandb.log({'Bleu Score': sum(bleu_scores) / len(bleu_scores),
                    f'{filename} Prediction Samples': wandb_table,
-                   f'{filename} Scores Plot': wandb.plot.histogram(
-                       wandb.Table(data=[[s] for s in bleu_scores],
-                                   columns=['bleu score'])
-                   )
+                   # f'{filename} Scores Plot': wandb.plot.histogram(
+                   #     wandb.Table(data=[[s] for s in bleu_scores],
+                   #                 columns=['bleu score']),
+                   #     'bleu_scores',
+                   #     title=f'{filename} Scores Plot'
+                   # )
                    })
+        with open(f"{filename} Bleu scores", "w") as f:
+            for s in bleu_scores:
+                f.write(str(s)+"\n")
 
     def save_pretrained(self, path):
         self.model.save_pretrained(path)

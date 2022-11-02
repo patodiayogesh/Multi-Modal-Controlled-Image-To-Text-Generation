@@ -2,9 +2,10 @@ from torch.utils.data import Dataset
 import torch
 from PIL import Image
 from torchvision.transforms import transforms
-from collections import defaultdict
+from collections import OrderedDict
 import random
 import pytorch_lightning as pl
+from masking_stratergies import epoch_aware_mask
 
 
 class FlickrPredictionDataset(Dataset):
@@ -75,8 +76,10 @@ class FlickrDatasetModule(pl.LightningDataModule):
         data = open('datasets/flickr30k/results_20130124.token', 'r').read().splitlines()
         captions = [x.split('\t')[1] for x in data]
         image_filenames = [x.split('#')[0] for x in data]
-        image_captions = defaultdict(list)
+        image_captions = OrderedDict()
         for image, caption in zip(image_filenames, captions):
+            if image not in image_captions:
+                image_captions[image] = []
             image_captions[image].append(caption)
         return image_captions
 
@@ -167,7 +170,10 @@ class FlickrDatasetModule(pl.LightningDataModule):
         )
         if self.multi_modal:
             if self.mask:
-                input_text = ['' for _ in batch_data]
+                if self.mask == 'empty':
+                    input_text = ['' for _ in batch_data]
+                elif self.mask == 'epoch_aware_mask':
+                    input_text = [epoch_aware_mask(x) for x in captions]
                 input_text_encodings = self.tokenizer(input_text, return_tensors='pt')
             else:
                 input_text_encodings = caption_encodings

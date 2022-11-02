@@ -1,4 +1,5 @@
 import copy
+import os
 
 class Trainer:
 
@@ -13,6 +14,8 @@ class Trainer:
         self.epochs = epochs
         self.patience = patience
         self.checkpoint_path = 'checkpoints/'
+        self.version = self._get_run_version()
+        self.checkpoint_path = f'{self.checkpoint_path}{self.version}/'
         self.dataset.set_model_variables(self.model)
 
     def fit(self):
@@ -53,4 +56,17 @@ class Trainer:
         self.model.predict(dataloader,
                            filename=self.dataset.predict_file)
 
+    def _get_run_version(self):
 
+        folder = 'checkpoints/'
+        sub_folders = [name for name in os.listdir(folder) if os.path.isdir(os.path.join(folder, name))]
+        versions = []
+        for x in sub_folders:
+            if x.startswith('version'):
+                versions.append(x)
+        if versions == []:
+            return 'version_0'
+        versions.sort(reverse=True)
+        last_ver = int(versions[0].split('_')[1])
+        new_ver = 'version_' + str(int(last_ver)+1)
+        return new_ver

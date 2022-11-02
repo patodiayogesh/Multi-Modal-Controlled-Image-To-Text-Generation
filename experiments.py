@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('--mask', type=str, default='True')
     parser.add_argument('--model_ckpt', type=str, required=False)
     parser.add_argument('--predict', type=str, default=None)
+
     args = parser.parse_args()
 
     if args.model_name == 'MultiModal':
@@ -23,7 +24,7 @@ if __name__ == '__main__':
         dataset = FlickrDatasetModule(multi_modal=args.multi_modal,
                                       mask=args.mask,
                                       predict_file=args.predict,
-                                      eval_batch_size=1 if args.multi_modal else 16)
+                                      eval_batch_size=1 if args.predict else 32)
     trainer = Trainer(model, dataset)
     if args.predict:
         trainer.inference()

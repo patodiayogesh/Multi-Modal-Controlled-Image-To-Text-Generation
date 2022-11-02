@@ -52,7 +52,7 @@ class MultiModalModel:
         self.beam_size = beam_size
 
         # Wandb
-        self.log_freq = 10
+        self.log_freq = 40
         wandb.init(project='multi-modal-image-caption-generation',
                    entity='multi-modal-image-caption-generation')
         wandb.watch(self.model, self.log_freq)

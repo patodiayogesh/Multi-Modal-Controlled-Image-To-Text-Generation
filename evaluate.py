@@ -7,8 +7,8 @@ def compute_bleu_scores(output, reference):
 
         bleu_4_sentence_scores.append(
             sentence_bleu(
-                [x.split() for x in ref],
-                op.split(),
+                [x.lower().split() for x in ref],
+                op.lower().split(),
                 auto_reweigh=True,
             )
             * 100

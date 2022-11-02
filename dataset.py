@@ -173,7 +173,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
                 if self.mask == 'empty':
                     input_text = ['' for _ in batch_data]
                 elif self.mask == 'epoch_aware_mask':
-                    input_text = [epoch_aware_mask(x) for x in captions]
+                    input_text = [epoch_aware_mask(self.epoch, x) for x in captions]
                 input_text_encodings = self.tokenizer(input_text, return_tensors='pt')
             else:
                 input_text_encodings = caption_encodings

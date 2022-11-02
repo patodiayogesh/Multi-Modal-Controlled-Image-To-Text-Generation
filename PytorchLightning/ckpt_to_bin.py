@@ -1,4 +1,4 @@
-from model import BaselineModel
+from PytorchLightning.model import BaselineModel
 
 if __name__ == '__main__':
 

@@ -28,6 +28,8 @@ class Trainer:
 
         for epoch in range(self.epochs):
 
+            self.dataset.epoch = epoch
+
             train_loss = self.model.train(epoch,
                                           self.dataset.train_dataloader())
             val_loss = self.model.test(epoch,

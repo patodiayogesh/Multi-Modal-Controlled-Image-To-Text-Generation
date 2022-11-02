@@ -12,7 +12,7 @@ def gaussian_mask(caption):
     output = " ".join(caption_split)
     return output
 
-def epoch_aware_mask(epoch,max_epochs,caption):
+def epoch_aware_mask(epoch,caption,max_epochs=20):
     mean = 1 - epoch/max_epochs
     std = 0.25
     val = np.random.normal(mean,std, size=(1,))

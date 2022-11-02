@@ -198,9 +198,14 @@ class FlickrDatasetModule(pl.LightningDataModule):
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
         if self.multi_modal:
-            input_text = ['' for _ in batch_data]
-            input_text_encodings = self.tokenizer(input_text,
-                                                  return_tensors='pt')
+            if self.mask == 'empty':
+                input_text = ['' for _ in batch_data]
+                input_text_encodings = self.tokenizer(input_text,
+                                                      return_tensors='pt')
+            elif self.mask == 'epoch_aware_mask':
+                input_text = ['<mask>' for _ in batch_data]
+                input_text_encodings = self.tokenizer(input_text,
+                                                      return_tensors='pt')
             return image_encodings, input_text_encodings, captions, image_filenames
         else:
             return image_encodings, captions, image_filenames

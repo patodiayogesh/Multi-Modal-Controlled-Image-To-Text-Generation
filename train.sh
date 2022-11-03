@@ -1,2 +1,1 @@
-python3 experiments.py --mask empty
-python3 experiments.py --mask epoch_aware_mask
+python3 experiments.py --mask text_infilling

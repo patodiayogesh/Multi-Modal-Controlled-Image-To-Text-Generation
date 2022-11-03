@@ -6,7 +6,7 @@ from transformers import (
 import torch
 import wandb
 from tqdm import tqdm
-from evaluate import compute_bleu_scores
+from evaluation_metrics import compute_bleu_scores
 
 
 class BaselineModel:
@@ -139,7 +139,9 @@ class BaselineModel:
             generated_ids = self.model.generate(image_pixel_values,
                                                 num_beams=self.beam_size,
                                                 max_length=24)
-            generated_captions = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            generated_captions = self.tokenizer.batch_decode(generated_ids,
+                                                             skip_special_tokens=True,
+                                                             clean_up_tokenization_spaces=False)
             avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
             bleu_scores += bleu_score_list
             progress_bar.set_postfix(bleu_score=avg_bleu_score)

@@ -7,7 +7,7 @@ from modelling_bartMultiModal import BartMultiModalGenerationModel
 import torch
 import wandb
 from tqdm import tqdm
-from evaluate import compute_bleu_scores
+from evaluation_metrics import compute_bleu_scores, compute_bert_score
 
 
 class MultiModalModel:
@@ -135,8 +135,8 @@ class MultiModalModel:
         self.model.eval()
         progress_bar = tqdm(dataloader)
         progress_bar.set_description('Inference')
-        bleu_scores = []
-        columns = ['Image', 'Generated Caption', 'Reference Captions', 'Bleu Score']
+        bleu_scores, bert_scores = [], []
+        columns = ['Image', 'Generated Caption', 'Reference Captions', 'Bleu Score', 'Bert Score']
         wandb_table = wandb.Table(columns=columns)
         with torch.no_grad():
             for batch_idx, batch_data in enumerate(progress_bar):
@@ -153,9 +153,13 @@ class MultiModalModel:
                                                     image_embeddings=image_embeddings,
                                                     num_beams=self.beam_size,
                                                     max_length=24)
-                generated_captions = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+                generated_captions = self.tokenizer.batch_decode(generated_ids,
+                                                                 skip_special_tokens=True,
+                                                                 clean_up_tokenization_spaces=False)
                 avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
                 bleu_scores += bleu_score_list
+                avg_bert_score, bert_score_list = compute_bert_score(generated_captions, reference_captions)
+                bert_scores += bert_score_list
                 progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
                 with open(f"{filename}_output.hyp", "a") as f:
@@ -170,20 +174,19 @@ class MultiModalModel:
                         wandb.Image(f'datasets/flickr30k_images/{image_file_name[0]}'),
                         generated_captions[0],
                         reference_captions[0],
-                        bleu_score_list[0]
+                        bleu_score_list[0],
+                        bert_score_list[0]
                     )
 
         wandb.log({'Bleu Score': sum(bleu_scores) / len(bleu_scores),
+                   'Bert Score': sum(bert_scores) / len(bert_scores),
                    f'{filename} Prediction Samples': wandb_table,
-                   # f'{filename} Scores Plot': wandb.plot.histogram(
-                   #     wandb.Table(data=[[s] for s in bleu_scores],
-                   #                 columns=['bleu score']),
-                   #     'bleu_scores',
-                   #     title=f'{filename} Scores Plot'
-                   # )
                    })
         with open(f"{filename} Bleu scores", "w") as f:
             for s in bleu_scores:
+                f.write(str(s)+"\n")
+        with open(f"{filename} Bert scores", "w") as f:
+            for s in bert_scores:
                 f.write(str(s)+"\n")
 
     def save_pretrained(self, path):

@@ -6,7 +6,7 @@ from collections import OrderedDict
 import random
 import pytorch_lightning as pl
 from masking_stratergies import epoch_aware_mask
-
+from utils import calculate_number_of_mask_tokens
 
 class FlickrPredictionDataset(Dataset):
 
@@ -90,7 +90,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
                  num_workers=12,
                  predict_file=None,
                  multi_modal=False,
-                 mask=False):
+                 mask=False,
+                 ):
 
         super().__init__()
 
@@ -139,6 +140,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
                 file_names = self.val_filenames
             elif self.predict_file == 'test':
                 file_names = self.test_filenames
+            self.median_length = calculate_number_of_mask_tokens(self.dataset, self.train_filenames)
             self.predict_dataset = FlickrPredictionDataset(file_names, self.dataset, self.transform)
 
     def _set_image_feature_extractor(self, image_feature_extractor):
@@ -203,7 +205,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
                 input_text_encodings = self.tokenizer(input_text,
                                                       return_tensors='pt')
             elif self.mask == 'epoch_aware_mask':
-                input_text = ['<mask>' for _ in batch_data]
+                input_text = [' '.join(['<mask>']*self.median_length) for _ in batch_data]
                 input_text_encodings = self.tokenizer(input_text,
                                                       return_tensors='pt')
             return image_encodings, input_text_encodings, captions, image_filenames

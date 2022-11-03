@@ -5,8 +5,8 @@ from torchvision.transforms import transforms
 from collections import OrderedDict
 import random
 import pytorch_lightning as pl
-from masking_stratergies import epoch_aware_mask
 from utils import calculate_number_of_mask_tokens
+from masking_stratergies import epoch_aware_mask, text_infilling
 
 class FlickrPredictionDataset(Dataset):
 
@@ -176,6 +176,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
                     input_text = ['' for _ in batch_data]
                 elif self.mask == 'epoch_aware_mask':
                     input_text = [epoch_aware_mask(self.epoch, x) for x in captions]
+                elif self.mask == 'text_infilling':
+                    input_text = [text_infilling(self.epoch, x) for x in captions]
                 input_text_encodings = self.tokenizer(input_text,
                                                       padding='longest',
                                                       return_tensors='pt')

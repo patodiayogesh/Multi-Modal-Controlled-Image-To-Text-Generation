@@ -10,7 +10,7 @@ def compute_bleu_scores(output, reference):
             sentence_bleu(
                 [x.lower().split(' ') for x in ref],
                 op.lower().split(' '),
-                auto_reweigh=False,
+                auto_reweigh=True,
             )
             * 100
         )

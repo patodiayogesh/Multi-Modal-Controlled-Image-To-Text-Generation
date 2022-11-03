@@ -177,7 +177,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
                 elif self.mask == 'epoch_aware_mask':
                     input_text = [epoch_aware_mask(self.epoch, x) for x in captions]
                 elif self.mask == 'text_infilling':
-                    input_text = [text_infilling(self.epoch, x) for x in captions]
+                    input_text = [text_infilling(x) for x in captions]
                 input_text_encodings = self.tokenizer(input_text,
                                                       padding='longest',
                                                       return_tensors='pt')
@@ -210,6 +210,12 @@ class FlickrDatasetModule(pl.LightningDataModule):
                 input_text = [' '.join(['<mask>']*self.median_length) for _ in batch_data]
                 input_text_encodings = self.tokenizer(input_text,
                                                       return_tensors='pt')
+            
+            elif self.mask == 'text_infilling':
+                input_text = ['<mask>' for _ in batch_data]
+                input_text_encodings = self.tokenizer(input_text,
+                                                      return_tensors='pt')
+
             return image_encodings, input_text_encodings, captions, image_filenames
         else:
             return image_encodings, captions, image_filenames

@@ -14,6 +14,14 @@ vision_model.eval()
 
 def image_features(name,d):
 
+    '''
+    Function to Get Image Embeddings
+
+    :param name: image filename
+    :param d: dictionary to save image embeddings
+    :return: None
+    '''
+
     images = transforms.PILToTensor()(Image.open('datasets/flickr30k_images/'+name))
     inputs = vision_feature_extractor(images, return_tensors="pt").pixel_values
     with torch.no_grad():

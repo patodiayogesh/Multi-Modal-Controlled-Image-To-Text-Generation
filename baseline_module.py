@@ -14,8 +14,16 @@ class BaselineModel:
     def __init__(self,
                  model_ckpt=None,
                  beam_size=5):
+        '''
+        Baseline Model - Vit Image Extractor and Encoder and BART Decoder
+        The Model contains a VIT (Image) Encoder and BART (Text) Decoder
+        The image features are passed to model to get image embeddings which
+        are sent to text decoder.
+        The weights of image encoder are frozen and not updated during training
 
-        # Vit Image Extractor and Encoder and BART Decoder
+        This model cannot be used for VQA because it doesnt have text encoder.
+        '''
+
 
         if torch.cuda.is_available():
             self.device = 'cuda:0'

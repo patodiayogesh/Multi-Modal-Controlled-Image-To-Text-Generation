@@ -15,10 +15,14 @@ from transformers.models.bart.modeling_bart import (
 
 class BartMultiModalEncoder(BartEncoder):
 
+    '''
+    Create New BART Encoder to allow image embeddings as input to encoder
+    '''
+
     def __init__(self, config, embed_tokens=None):
         super().__init__(config, embed_tokens=None)
         self.config = config
-        # self.init_weights()
+
 
     def forward(self,
                 input_ids=None,
@@ -30,7 +34,9 @@ class BartMultiModalEncoder(BartEncoder):
                 return_dict=True,
                 image_embeddings=None,
                 ):
+
         # Image Embeddings are not passed to BartEncoder
+        # Call parent class forward. The image embeddings are not passed to encoder
         return super().forward(
             input_ids,
             attention_mask,
@@ -43,6 +49,13 @@ class BartMultiModalEncoder(BartEncoder):
 
 
 class BartMultiModalModel(BartModel):
+
+    '''
+    Create BART Model which takes image embeddings and tokenized text as input
+    The text is passed to BART encoder to get text embeddings.
+    Concat image and text embeddings. Concat the attention mask for image and text
+    Pass the concatenated embeddings to decoder as input embeddings.
+    '''
 
     def __init__(self, config: BartConfig):
 
@@ -78,6 +91,14 @@ class BartMultiModalModel(BartModel):
             image_embeddings=None,
             **kwargs
     ) -> Union[Tuple, Seq2SeqModelOutput]:
+
+        '''
+        Copy the forward function from hugging face bart implementation at https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
+        Change the function to allow concatenation of image embeddings with text embeddings
+        and pass it to the decoder
+        '''
+
+        # START: COPIED FROM https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
 
         if decoder_input_ids is None and decoder_inputs_embeds is None:
             if input_ids is None:
@@ -116,6 +137,7 @@ class BartMultiModalModel(BartModel):
                 hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,
                 attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,
             )
+        # END: COPIED FROM https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
 
         '''
         Beam Search creates (num_beams*enocder_input_ids) and passes to encoder which gives
@@ -143,6 +165,7 @@ class BartMultiModalModel(BartModel):
             extended_attention_mask = torch.concat((image_attention_mask,
                                                     attention_mask),
                                                    axis=1)
+        # START: COPIED FROM https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
 
         decoder_outputs = self.decoder(
             input_ids=decoder_input_ids,
@@ -172,9 +195,15 @@ class BartMultiModalModel(BartModel):
             encoder_hidden_states=encoder_outputs.hidden_states,
             encoder_attentions=encoder_outputs.attentions,
         )
+    # END: COPIED FROM https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
 
 
 class BartMultiModalGenerationModel(BartForConditionalGeneration):
+
+    '''
+    Inherit the BartForConditionalGeneration and set 'BartMultiModalModel' as model
+    Utilize BartForConditionalGeneration huggingface's generate function for our model
+    '''
 
     base_model_prefix = "model"
     _keys_to_ignore_on_load_missing = [
@@ -190,6 +219,8 @@ class BartMultiModalGenerationModel(BartForConditionalGeneration):
         self.model = BartMultiModalModel(config)
         self.register_buffer("final_logits_bias", torch.zeros((1, self.model.shared.num_embeddings)))
         self.lm_head = nn.Linear(config.d_model, self.model.shared.num_embeddings, bias=False)
+
+    # START: COPIED FROM https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
 
     def get_encoder(self):
         return self.model.get_encoder()
@@ -297,6 +328,7 @@ class BartMultiModalGenerationModel(BartForConditionalGeneration):
             output["image_embeddings"] = kwargs['image_embeddings']
 
         return output
+    # END: COPIED FROM https://github.com/huggingface/transformers/blob/main/src/transformers/models/bart/modeling_bart.py
 
 
 if __name__ == '__main__':

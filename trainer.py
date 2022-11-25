@@ -59,6 +59,9 @@ class Trainer:
                            filename=self.dataset.predict_file)
 
     def _get_run_version(self):
+        '''
+        Function to check last version no and return new dir to save model
+        '''
 
         folder = 'checkpoints/'
         sub_folders = [name for name in os.listdir(folder) if os.path.isdir(os.path.join(folder, name))]

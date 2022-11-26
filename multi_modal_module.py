@@ -7,7 +7,8 @@ from modelling_bartMultiModal import BartMultiModalGenerationModel
 import torch
 import wandb
 from tqdm import tqdm
-from evaluation_metrics import compute_bleu_scores, compute_bert_score
+import pickle
+from evaluation_metrics import compute_bleu_scores, compute_bert_score, compute_rouge_score, compute_meteor_score
 
 
 class MultiModalModel:
@@ -17,6 +18,10 @@ class MultiModalModel:
                  beam_size=5):
 
         # Vit Image Extractor and Encoder and BART Decoder
+        '''
+        Set Modified BART Model architecture as model for text generation
+        Pass Image Embeddings and Text as Input and Get Text as Output
+        '''
 
         if torch.cuda.is_available():
             self.device = 'cuda:0'
@@ -130,14 +135,26 @@ class MultiModalModel:
 
     def predict(self,
                 dataloader,
-                filename):
+                filename,
+                calculate_bleu_score=True,
+                calculate_bert_score=False,
+                calculate_meteor_score=True,
+                calculate_rouge_score=True):
 
         self.model.eval()
         progress_bar = tqdm(dataloader)
         progress_bar.set_description('Inference')
-        bleu_scores, bert_scores = [], []
-        columns = ['Image', 'Generated Caption', 'Reference Captions', 'Bleu Score', 'Bert Score']
+        bleu_scores, bert_scores, rouge_scores, meteor_scores = [], [], [], []
+        columns = ['Image',
+                   'Generated Caption', 'Reference Captions',
+                   'Bleu Score', 'Rouge Score', 'Meteor Score',
+                   ]
         wandb_table = wandb.Table(columns=columns)
+
+        predictions = []
+        targets = []
+        images = []
+
         with torch.no_grad():
             for batch_idx, batch_data in enumerate(progress_bar):
                 image_pixel_values = batch_data[0].to(self.device)
@@ -156,12 +173,10 @@ class MultiModalModel:
                 generated_captions = self.tokenizer.batch_decode(generated_ids,
                                                                  skip_special_tokens=True,
                                                                  clean_up_tokenization_spaces=False)
-                avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
-                bleu_scores += bleu_score_list
-                avg_bert_score, bert_score_list = compute_bert_score(generated_captions, reference_captions)
-                bert_scores += bert_score_list
-                progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
+                predictions += generated_captions
+                targets += reference_captions
+                images += image_file_name
                 with open(f"{filename}_output.hyp", "a") as f:
                     for pred in generated_captions:
                         f.write(f"{pred}\n")
@@ -169,25 +184,46 @@ class MultiModalModel:
                     for target in reference_captions:
                         f.write(f"{target}\n")
 
+                # Evaluation Metrics
+                if calculate_bleu_score:
+                    avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
+                    bleu_scores += bleu_score_list
+                if calculate_bert_score:
+                    avg_bert_score, bert_score_list = compute_bert_score(generated_captions, reference_captions)
+                    bert_scores += bert_score_list
+                if calculate_rouge_score:
+                    avg_rouge_score, rouge_score_list = compute_rouge_score(generated_captions, reference_captions)
+                    rouge_scores += rouge_score_list
+                if calculate_meteor_score:
+                    avg_meteor_score, meteor_score_list = compute_meteor_score(generated_captions, reference_captions)
+                    meteor_scores += meteor_score_list
+                progress_bar.set_postfix(bleu_score=avg_bleu_score)
+
                 if batch_idx % 10 == 0:
                     wandb_table.add_data(
                         wandb.Image(f'datasets/flickr30k_images/{image_file_name[0]}'),
                         generated_captions[0],
                         reference_captions[0],
                         bleu_score_list[0],
-                        bert_score_list[0]
+                        # bert_score_list[0] if calculate_bert_score ,
+                        rouge_score_list[0],
+                        meteor_score_list[0]
                     )
 
-        wandb.log({'Bleu Score': sum(bleu_scores) / len(bleu_scores),
-                   'Bert Score': sum(bert_scores) / len(bert_scores),
+        # Log and Save results after prediction
+        wandb.log({'Bleu Score': round(sum(bleu_scores) / len(bleu_scores), 2),
+                   # 'Bert Score': round(sum(bert_scores) / len(bert_scores), 2),
+                   'Rouge Score': round(sum(rouge_scores) / len(rouge_scores), 2),
+                   'Meteor Score': round(sum(meteor_scores) / len(meteor_scores), 2),
                    f'{filename} Prediction Samples': wandb_table,
                    })
-        with open(f"{filename} Bleu scores", "w") as f:
-            for s in bleu_scores:
-                f.write(str(s)+"\n")
-        with open(f"{filename} Bert scores", "w") as f:
-            for s in bert_scores:
-                f.write(str(s)+"\n")
+
+        with open(f"{filename}_output_hyp.pkl", "wb"):
+            pickle.dump(predictions, f)
+        with open(f"{filename}_output_ref.pkl", "wb"):
+            pickle.dump(targets, f)
+        with open(f"{filename}_image_filenames.pkl", "wb"):
+            pickle.dump(images, f)
 
     def save_pretrained(self, path):
         self.model.save_pretrained(path)

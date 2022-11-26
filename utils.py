@@ -27,6 +27,10 @@ def calculate_number_of_mask_tokens(dataset, filenames):
 
 def mask_sentence_for_prediction(captions, median=None):
 
+    """
+    Function to generate <mask> prompt for epoch aware mask training strategy
+    """
+
     if median is None:
         return random_mask_for_caption_prediction(captions)
 

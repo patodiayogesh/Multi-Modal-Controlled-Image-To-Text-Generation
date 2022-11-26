@@ -29,6 +29,9 @@ class FlickrPredictionDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
+        """
+        Return Image, Caption, Image File Name
+        """
 
         caption = self.captions[index]
         image_filename = self.images[index]
@@ -60,7 +63,9 @@ class FlickrDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
-
+        '''
+        Return Image, Caption
+        '''
         caption = self.captions[index]
         image_filename = self.images[index]
         img = Image.open(self.image_dir + image_filename)
@@ -172,6 +177,7 @@ class FlickrDatasetModule(pl.LightningDataModule):
         )
         if self.multi_modal:
             if self.mask:
+                # Masking strategies for input text
                 if self.mask == 'empty':
                     input_text = ['' for _ in batch_data]
                 elif self.mask == 'epoch_aware_mask':
@@ -207,7 +213,8 @@ class FlickrDatasetModule(pl.LightningDataModule):
                 input_text_encodings = self.tokenizer(input_text,
                                                       return_tensors='pt')
             elif self.mask == 'epoch_aware_mask':
-                input_text = [' '.join(['<mask>']*self.median_length) for _ in batch_data]
+                # input_text = [' '.join(['<mask>']*self.median_length) for _ in batch_data]
+                input_text = [' '.join(['<mask>'] * (len(cap[0].split(' ')))) for cap in captions]
                 input_text_encodings = self.tokenizer(input_text,
                                                       return_tensors='pt')
             

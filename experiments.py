@@ -21,9 +21,7 @@ if __name__ == '__main__':
     else:
         model = BaselineModel(args.model_ckpt)
     if args.dataset == 'flickr':
-        dataset = VQADatasetModule(multi_modal=args.multi_modal,
-                                      mask=args.mask,
-                                      eval_batch_size=1 if args.predict else 32)
+        dataset = VQADatasetModule()
     trainer = Trainer(model, dataset)
     if args.predict:
         trainer.inference()

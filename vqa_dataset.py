@@ -96,7 +96,7 @@ class VQAPredictionDataset(Dataset):
       
       for val in answers['annotations']:
         question_id = val['question_id']
-        questions_dict[question_id]['answers'] = val['answers']
+        questions_dict[question_id]['answers'] = val['answers'][0]['answer']
 
       for v in images:
         image_name = v
@@ -116,9 +116,10 @@ class VQAPredictionDataset(Dataset):
     def __getitem__(self, index):
 
         question = self.pairs[index][1]
-        answer = self.pairs[index][2]
+        answer = self.pairs[index][2][0]
         image_filename = self.pairs[index][0]
         img = Image.open(self.image_dir + image_filename)
+        print(self.image_dir + image_filename,question,answer)
         if self.transform:
             img = self.transform(img)
         return img, question, answer, image_filename
@@ -160,7 +161,7 @@ class VQADataset(Dataset):
       
       for val in answers['annotations']:
         question_id = val['question_id']
-        questions_dict[question_id]['answers'] = val['answers']
+        questions_dict[question_id]['answers'] = val['answers'][0]['answer']
 
       for v in images:
         image_name = v
@@ -263,6 +264,7 @@ class VQADatasetModule(pl.LightningDataModule):
         answers = [t[2] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
+        #print(image_encodings,questions,answers)
         question_encodings = self.tokenizer(
             questions,
             padding="longest",

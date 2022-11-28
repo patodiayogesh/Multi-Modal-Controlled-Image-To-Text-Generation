@@ -213,12 +213,12 @@ class VQADatasetModule(pl.LightningDataModule):
         super().__init__()
         
         
-        self.train_questions = '/content/v2_OpenEnded_mscoco_train2014_questions.json'
-        self.val_questions = '/content/v2_OpenEnded_mscoco_val2014_questions.json'
-        self.test_questions = '/content/v2_OpenEnded_mscoco_test2015_questions.json'
+        self.train_questions = './vqa_jsons/v2_OpenEnded_mscoco_train2014_questions.json'
+        self.val_questions = './vqa_jsons/v2_OpenEnded_mscoco_val2014_questions.json'
+        self.test_questions = './vqa_jsons/v2_OpenEnded_mscoco_test2015_questions.json'
 
-        self.train_answers = '/content/v2_mscoco_train2014_annotations.json'
-        self.val_answers = '/content/v2_mscoco_val2014_annotations.json'
+        self.train_answers = './vqa_jsons/v2_mscoco_train2014_annotations.json'
+        self.val_answers = './vqa_jsons/v2_mscoco_val2014_annotations.json'
         
 
         self.train_batch_size = train_batch_size

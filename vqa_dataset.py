@@ -32,7 +32,7 @@ class VQATestDataset(Dataset):
         question = val['question']
         question_id = val['question_id']
 
-        image_name = 'COCO_train2014_'+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
+        image_name = 'COCO_test2015_'+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
         questions_dict[question_id] = {'Question':question}
         if not image_name in images:
           images[image_name] = []
@@ -88,7 +88,7 @@ class VQAPredictionDataset(Dataset):
         question = val['question']
         question_id = val['question_id']
 
-        image_name = 'COCO_train2014_'+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
+        image_name = 'COCO_val2014_'+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
         questions_dict[question_id] = {'Question':question}
         if not image_name in images:
           images[image_name] = []
@@ -135,6 +135,14 @@ class VQADataset(Dataset):
                  ):
 
         self.image_dir = 'datasets/vqa_images/'+split+'/'
+        self.prefix = None
+        if split == 'train':
+            self.prefix = 'COCO_train2014_'
+        elif split == 'val':
+            self.prefix = 'COCO_val2014_'
+        else:
+            self.prefix = 'COCO_test2014_'
+
         self.pairs = self.load_dataset(questions_file,answers_file)
         self.transform = transform
     
@@ -153,7 +161,8 @@ class VQADataset(Dataset):
         question = val['question']
         question_id = val['question_id']
 
-        image_name = 'COCO_train2014_'+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
+        image_name = self.prefix+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
+        
         questions_dict[question_id] = {'Question':question}
         if not image_name in images:
           images[image_name] = []
@@ -183,10 +192,10 @@ class VQADataset(Dataset):
         question = self.pairs[index][1]
         answer = self.pairs[index][2]
         image_filename = self.pairs[index][0]
-        img = Image.open(self.image_dir + image_filename)
+        img = Image.open(self.image_dir + image_filename).convert('RGB')
         if self.transform:
             img = self.transform(img)
-        return img, question, answer
+        return img, question, answer,image_filename
 
 class VQADatasetModule(pl.LightningDataModule):
 
@@ -262,8 +271,14 @@ class VQADatasetModule(pl.LightningDataModule):
         image_tensors = [t[0] for t in batch_data]
         questions = [t[1] for t in batch_data]
         answers = [t[2] for t in batch_data]
-
-        image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
+        filenames = [t[3] for t in batch_data]
+        #for img in image_tensors:
+            #print(img.shape)
+        #print("-------")
+        try:
+            image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
+        except Exception as e:
+            print(e,filenames)
         #print(image_encodings,questions,answers)
         question_encodings = self.tokenizer(
             questions,

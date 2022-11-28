@@ -135,6 +135,7 @@ class VQADataset(Dataset):
 
         self.image_dir = 'datasets/vqa_images/'+split+'/'
         self.pairs = self.load_dataset(questions_file,answers_file)
+        self.transform = transform
     
     def load_dataset(self,question_json,answer_json):
       f = open(answer_json)
@@ -207,9 +208,6 @@ class VQADatasetModule(pl.LightningDataModule):
                  eval_batch_size=16,
                  transform=transforms.PILToTensor(),
                  num_workers=12,
-                 predict_file=None,
-                 multi_modal=False,
-                 mask=False,
                  ):
 
         super().__init__()
@@ -227,9 +225,6 @@ class VQADatasetModule(pl.LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.transform = transform
         self.num_workers = num_workers
-        self.predict_file = predict_file
-        self.multi_modal = multi_modal
-        self.mask = mask
 
     def setup(self, stage=None):
 

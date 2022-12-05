@@ -13,7 +13,7 @@ class Trainer:
         self.dataset = dataset
         self.epochs = epochs
         self.patience = patience
-        self.checkpoint_path = 'checkpoints/'
+        self.checkpoint_path = 'checkpoints_vqa/'
         self.version = self._get_run_version()
         self.checkpoint_path = f'{self.checkpoint_path}{self.version}/'
         self.dataset.set_model_variables(self.model)

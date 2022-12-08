@@ -34,7 +34,7 @@ class Trainer:
             self.dataset.epoch = epoch
 
             train_loss = self.model.train(epoch,
-                                          self.dataset.train_dataloader())
+                                          self.dataset.train_dataloader(),f'{self.checkpoint_path}epoch_{epoch}')
             val_loss = self.model.test(epoch,
                                        self.dataset.val_dataloader())
             self.model.lr_scheduler.step()

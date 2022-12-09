@@ -28,7 +28,10 @@ def text_infilling(caption):
     caption_split = caption.split(' ')
     if len(caption_split) <= 4:
       return "<mask>"
-    num_masks = np.random.randint(max(1,len(caption_split)//5),len(caption_split)//3)
+    try:
+        num_masks = np.random.randint(max(1,len(caption_split)//5),len(caption_split)//3)
+    except Exception as e:
+        print(e,caption)
 
     masks_pos = set()
     i=0

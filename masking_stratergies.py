@@ -26,7 +26,7 @@ def epoch_aware_mask(epoch,caption,max_epochs=20):
 
 def text_infilling(caption):
     caption_split = caption.split(' ')
-    if len(caption_split) <= 4:
+    if len(caption_split) <= 6:
       return "<mask>"
     try:
         num_masks = np.random.randint(max(1,len(caption_split)//5),len(caption_split)//3)

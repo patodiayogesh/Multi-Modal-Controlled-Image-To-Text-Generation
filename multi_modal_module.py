@@ -95,8 +95,8 @@ class MultiModalModel:
             loss.backward()
             self.optimizer.step()
 
-            if batch_idx in set_steps:
-                self.model.save_pretrained(f'{path}_batch{batch_idx}/')
+            # if batch_idx in set_steps:
+            #     self.model.save_pretrained(f'{path}_batch{batch_idx}/')
                 
             if batch_idx % self.log_freq == 0:
                 wandb.log({"train/loss": loss.item()})

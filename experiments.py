@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', type=str, default='MultiModal')
-    parser.add_argument('--dataset', type=str, default='flickr')
+    parser.add_argument('--dataset', type=str, default='vqa')
     parser.add_argument('--multi_modal', type=bool, default=True)
     parser.add_argument('--mask', type=str, default='empty', choices=['empty', 'epoch_aware_mask','text_infilling'])
     parser.add_argument('--model_ckpt', type=str, required=False)

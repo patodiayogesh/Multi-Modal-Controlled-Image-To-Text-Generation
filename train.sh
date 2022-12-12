@@ -1,1 +1,1 @@
-python3 experiments.py --mask text_infilling
+python3 experiments.py

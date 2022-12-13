@@ -308,7 +308,13 @@ class VQADatasetModule(pl.LightningDataModule):
         image_filenames = [t[3] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
-        question_encodings = self.tokenizer(questions,return_tensors='pt')
+
+        question_encodings = self.tokenizer(
+            questions,
+            padding="longest",
+            truncation=True,
+            return_tensors="pt",
+        )
 
         return image_encodings, question_encodings, answers, image_filenames
 

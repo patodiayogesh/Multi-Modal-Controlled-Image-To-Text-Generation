@@ -182,6 +182,7 @@ class MultiModalModel:
                 predictions += generated_captions
                 targets += reference_captions
                 images += image_file_name
+                print(generated_captions,reference_captions,image_file_name)
                 with open(f"{filename}_output.hyp", "a") as f:
                     for pred in generated_captions:
                         f.write(f"{pred}\n")
@@ -206,7 +207,7 @@ class MultiModalModel:
 
                 if batch_idx % 10 == 0:
                     wandb_table.add_data(
-                        wandb.Image(f'datasets/flickr30k_images/{image_file_name[0]}'),
+                        wandb.Image(f'datasets/vqa_images/val/{image_file_name[0]}'),
                         generated_captions[0],
                         reference_captions[0],
                         bleu_score_list[0],

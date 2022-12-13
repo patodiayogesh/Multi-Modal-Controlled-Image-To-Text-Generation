@@ -116,7 +116,7 @@ class VQAPredictionDataset(Dataset):
     def __getitem__(self, index):
 
         question = self.pairs[index][1]
-        answer = self.pairs[index][2][0]
+        answer = self.pairs[index][2]
         image_filename = self.pairs[index][0]
         img = Image.open(self.image_dir + image_filename)
         print(self.image_dir + image_filename,question,answer)
@@ -170,6 +170,7 @@ class VQADataset(Dataset):
       
       for val in answers['annotations']:
         question_id = val['question_id']
+        print("DEBUG:",val['answers'])
         questions_dict[question_id]['answers'] = val['answers'][0]['answer']
 
       for v in images:
@@ -178,8 +179,8 @@ class VQADataset(Dataset):
         for q in question_ids:
           obj = questions_dict[q]
           q = obj['Question']
-          for a in obj['answers']:
-            grand_dict.append([image_name,q,a])
+          a = obj['answers']
+          grand_dict.append([image_name,q,a])
       
       return grand_dict
 
@@ -195,6 +196,7 @@ class VQADataset(Dataset):
         img = Image.open(self.image_dir + image_filename).convert('RGB')
         if self.transform:
             img = self.transform(img)
+        #print("GET",question,answer)
         return img, question, answer,image_filename
 
 class VQADatasetModule(pl.LightningDataModule):
@@ -276,6 +278,7 @@ class VQADatasetModule(pl.LightningDataModule):
         #for img in image_tensors:
             #print(img.shape)
         #print("-------")
+        print(questions,answers,filenames)
         try:
             image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
         except Exception as e:
@@ -316,7 +319,7 @@ class VQADatasetModule(pl.LightningDataModule):
             truncation=True,
             return_tensors="pt",
         )
-
+        print(len(image_filenames))
         return image_encodings, question_encodings, answers, image_filenames
 
     def train_dataloader(self):

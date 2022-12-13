@@ -119,7 +119,7 @@ class VQAPredictionDataset(Dataset):
         answer = self.pairs[index][2]
         image_filename = self.pairs[index][0]
         img = Image.open(self.image_dir + image_filename)
-        print(self.image_dir + image_filename,question,answer)
+        # print(self.image_dir + image_filename,question,answer)
         if self.transform:
             img = self.transform(img)
         return img, question, answer, image_filename
@@ -170,7 +170,7 @@ class VQADataset(Dataset):
       
       for val in answers['annotations']:
         question_id = val['question_id']
-        print("DEBUG:",val['answers'])
+        # print("DEBUG:",val['answers'])
         for ans in val['answers']:
             if ans['answer_confidence'] == 'yes':
                 questions_dict[question_id]['answers'] = ans['answer']
@@ -283,7 +283,7 @@ class VQADatasetModule(pl.LightningDataModule):
         #for img in image_tensors:
             #print(img.shape)
         #print("-------")
-        print(questions,answers,filenames)
+        # print(questions,answers,filenames)
         try:
             image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values
         except Exception as e:
@@ -324,7 +324,7 @@ class VQADatasetModule(pl.LightningDataModule):
             truncation=True,
             return_tensors="pt",
         )
-        print(len(image_filenames))
+        # print(len(image_filenames))
         return image_encodings, question_encodings, answers, image_filenames
 
     def train_dataloader(self):

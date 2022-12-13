@@ -171,7 +171,12 @@ class VQADataset(Dataset):
       for val in answers['annotations']:
         question_id = val['question_id']
         print("DEBUG:",val['answers'])
-        questions_dict[question_id]['answers'] = val['answers'][0]['answer']
+        for ans in val['answers']:
+            if ans['answer_confidence'] == 'yes':
+                questions_dict[question_id]['answers'] = ans['answer']
+                break
+            else:
+                questions_dict[question_id]['answers'] = val['answers'][0]['answer']
 
       for v in images:
         image_name = v

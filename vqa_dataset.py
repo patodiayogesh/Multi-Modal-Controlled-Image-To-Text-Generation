@@ -72,7 +72,7 @@ class VQAPredictionDataset(Dataset):
 
         self.image_dir = 'datasets/vqa_images/val/'
         self.pairs = self.load_dataset(questions_file,answers_file)
-    
+        self.transform = transform
     def load_dataset(self,question_json,answer_json):
       f = open(answer_json)
       answers = json.load(f)

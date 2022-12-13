@@ -246,10 +246,11 @@ class VQADatasetModule(pl.LightningDataModule):
             self.val_dataset = VQADataset(self.val_questions,self.val_answers,'val', self.transform)
 
         if stage == 'test':
-            self.val_dataset = VQADataset(self.val_questions,self.val_answers,'val', self.transform)
+            self.test_dataset = VQADataset(self.val_questions,self.val_answers,'val', self.transform)
 
         if stage == 'predict':
-            self.val_dataset = VQAPredictionDataset(self.val_questions,self.val_answers,'val', self.transform)
+            self.predict_file='val'
+            self.predict_dataset = VQAPredictionDataset(self.val_questions,self.val_answers, self.transform)
 
     def _set_image_feature_extractor(self, image_feature_extractor):
         self.image_feature_extractor = image_feature_extractor

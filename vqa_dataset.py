@@ -349,7 +349,7 @@ class VQADatasetModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(
             self.predict_dataset,
             shuffle=False,
-            batch_size=self.eval_batch_size,
+            batch_size=1,
             num_workers=self.num_workers,
             collate_fn=self.prediction_tokenization,
         )

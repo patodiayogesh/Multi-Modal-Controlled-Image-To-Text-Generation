@@ -89,14 +89,24 @@ class VQAPredictionDataset(Dataset):
         question_id = val['question_id']
 
         image_name = 'COCO_val2014_'+'0'*(12-len(str(image_id)))+str(image_id)+'.jpg'
-        questions_dict[question_id] = {'Question':question}
+        questions_dict[question_id] = {'Question':question, 'answers':set()}
         if not image_name in images:
           images[image_name] = []
         images[image_name].append(question_id)
-      
+    
       for val in answers['annotations']:
         question_id = val['question_id']
-        questions_dict[question_id]['answers'] = val['answers'][0]['answer']
+        flag = False
+        for ans in val['answers']:
+            if ans['answer_confidence'] == 'yes':
+                questions_dict[question_id]['answers'].add(ans['answer'])
+                flag = True
+
+        if not flag:
+             for ans in val['answers']:
+                questions_dict[question_id]['answers'].add(ans['answer'])
+
+        
 
       for v in images:
         image_name = v
@@ -313,7 +323,7 @@ class VQADatasetModule(pl.LightningDataModule):
 
         image_tensors = [t[0] for t in batch_data]
         questions = [t[1] for t in batch_data]
-        answers = [t[2] for t in batch_data]
+        answers = [list(t[2]) for t in batch_data]
         image_filenames = [t[3] for t in batch_data]
 
         image_encodings = self.image_feature_extractor(image_tensors, return_tensors='pt').pixel_values

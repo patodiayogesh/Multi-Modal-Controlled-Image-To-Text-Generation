@@ -14,9 +14,10 @@ class Trainer:
         self.epochs = epochs
         self.patience = patience
         if type(dataset) == 'VQADatasetModule':
-            self.checkpoint_path = 'checkpoints_vqa/'
+            self.experiment_setting = 'vqa'
         else:
-            self.checkpoint_path = 'checkpoints/'
+            self.experiment_setting = 'flickr30k'
+        self.checkpoint_path = 'checkpoints/'
         self.version = self._get_run_version()
         self.checkpoint_path = f'{self.checkpoint_path}{self.version}/'
         self.dataset.set_model_variables(self.model)
@@ -59,12 +60,13 @@ class Trainer:
         self.dataset.setup('predict')
         dataloader = self.dataset.predict_dataloader()
         self.model.predict(dataloader,
-                           filename=self.dataset.predict_file)
+                           filename=self.dataset.predict_file,
+                           experiment_setting=self.experiment_setting,)
 
     def _get_run_version(self):
-        '''
+        """
         Function to check last version no and return new dir to save model
-        '''
+        """
 
         folder = 'checkpoints/'
         sub_folders = [name for name in os.listdir(folder) if os.path.isdir(os.path.join(folder, name))]

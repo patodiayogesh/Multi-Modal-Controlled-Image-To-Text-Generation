@@ -44,6 +44,7 @@ class MultiModalModel:
             self.model = BartMultiModalGenerationModel.from_pretrained(text_decoder)
         else:
             self.model = BartMultiModalGenerationModel.from_pretrained(model_ckpt)
+            self.model_ckpt = '_'.join(model_ckpt.split('/'))
         self.model.to(self.device)
 
         # Hyperparameters
@@ -69,7 +70,7 @@ class MultiModalModel:
               path):
 
         self.model.train()
-        set_steps = set([10,50,100,500,1000,5000,10000])
+        set_steps = set([10, 50, 100, 500, 1000, 5000, 10000])
         total_loss = 0.0
         progress_bar = tqdm(train_dataloader)
         for batch_idx, batch_data in enumerate(progress_bar):
@@ -95,9 +96,9 @@ class MultiModalModel:
             loss.backward()
             self.optimizer.step()
 
-            if batch_idx in set_steps and epoch==0:
+            if batch_idx in set_steps and epoch == 0:
                 self.model.save_pretrained(f'{path}_batch{batch_idx}/')
-                
+
             if batch_idx % self.log_freq == 0:
                 wandb.log({"train/loss": loss.item()})
 
@@ -144,18 +145,17 @@ class MultiModalModel:
                 calculate_bleu_score=True,
                 calculate_bert_score=False,
                 calculate_meteor_score=True,
-                calculate_rouge_score=True):
+                calculate_rouge_score=True,
+                experiment_setting='vqa'):
 
         self.model.eval()
         progress_bar = tqdm(dataloader)
         progress_bar.set_description('Inference')
         bleu_scores, bert_scores, rouge_scores, meteor_scores = [], [], [], []
-        columns = ['Image',
-                   'Generated Caption', 'Reference Captions',
-                   'Bleu Score', 'Rouge Score', 'Meteor Score',
-                   ]
+        columns = self.wandb_column_names(experiment_setting)
         wandb_table = wandb.Table(columns=columns)
 
+        model_inputs = []
         predictions = []
         targets = []
         images = []
@@ -166,7 +166,7 @@ class MultiModalModel:
                 input_encodings = batch_data[1].to(self.device)
                 input_ids = input_encodings.input_ids
                 input_attention_mask = input_encodings.attention_mask
-                reference_captions = batch_data[2]
+                reference_text = batch_data[2]
                 image_file_name = batch_data[3]
 
                 image_embeddings = self.image_model(image_pixel_values).last_hidden_state
@@ -175,46 +175,52 @@ class MultiModalModel:
                                                     image_embeddings=image_embeddings,
                                                     num_beams=self.beam_size,
                                                     max_length=24)
-                generated_captions = self.tokenizer.batch_decode(generated_ids,
-                                                                 skip_special_tokens=True,
-                                                                 clean_up_tokenization_spaces=False)
+                generated_text = self.tokenizer.batch_decode(generated_ids,
+                                                             skip_special_tokens=True,
+                                                             clean_up_tokenization_spaces=False)
 
-                predictions += generated_captions
-                targets += reference_captions
+                input_text = self.tokenizer.batch_decode(input_ids,
+                                                         skip_special_tokens=True,
+                                                         clean_up_tokenization_spaces=False)
+                model_inputs += input_text
+                predictions += generated_text
+                targets += reference_text
                 images += image_file_name
-                #print(generated_captions,reference_captions,image_file_name)
+                print(input_text, generated_text,reference_text,image_file_name)
+
+                if experiment_setting == 'vqa':
+                    with open(f"{filename}_input", "a") as f:
+                        for txt, img in zip(input_text, image_file_name):
+                            f.write(f"{txt} {img}\n")
                 with open(f"{filename}_output.hyp", "a") as f:
-                    for pred in generated_captions:
+                    for pred in generated_text:
                         f.write(f"{pred}\n")
                 with open(f"{filename}_output.ref", "a") as f:
-                    for target in reference_captions:
+                    for target in reference_text:
                         f.write(f"{target}\n")
 
                 # Evaluation Metrics
                 if calculate_bleu_score:
-                    avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_captions, reference_captions)
+                    avg_bleu_score, bleu_score_list = compute_bleu_scores(generated_text, reference_text)
                     bleu_scores += bleu_score_list
                 if calculate_bert_score:
-                    avg_bert_score, bert_score_list = compute_bert_score(generated_captions, reference_captions)
+                    avg_bert_score, bert_score_list = compute_bert_score(generated_text, reference_text)
                     bert_scores += bert_score_list
                 if calculate_rouge_score:
-                    avg_rouge_score, rouge_score_list = compute_rouge_score(generated_captions, reference_captions)
+                    avg_rouge_score, rouge_score_list = compute_rouge_score(generated_text, reference_text)
                     rouge_scores += rouge_score_list
                 if calculate_meteor_score:
-                    avg_meteor_score, meteor_score_list = compute_meteor_score(generated_captions, reference_captions)
+                    avg_meteor_score, meteor_score_list = compute_meteor_score(generated_text, reference_text)
                     meteor_scores += meteor_score_list
                 progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
                 if batch_idx % 10 == 0:
-                    wandb_table.add_data(
-                        wandb.Image(f'datasets/vqa_images/val/{image_file_name[0]}'),
-                        generated_captions[0],
-                        reference_captions[0],
-                        bleu_score_list[0],
-                        # bert_score_list[0] if calculate_bert_score ,
-                        rouge_score_list[0],
-                        meteor_score_list[0]
-                    )
+                    self.update_wandb_table(wandb_table,
+                                            image_file_name,
+                                            input_text, generated_text, reference_text,
+                                            bleu_score_list, rouge_score_list, meteor_score_list,
+                                            experiment_setting)
+
 
         # Log and Save results after prediction
         wandb.log({'Bleu Score': round(sum(bleu_scores) / len(bleu_scores), 2),
@@ -224,12 +230,57 @@ class MultiModalModel:
                    f'{filename} Prediction Samples': wandb_table,
                    })
 
-        with open(f"{filename}_output_hyp.pkl", "wb"):
+        with open(f"{self.model_ckpt}_model_inputs.pkl", "wb"):
+            pickle.dump(model_inputs, f)
+        with open(f"{self.model_ckpt}_output_hyp.pkl", "wb"):
             pickle.dump(predictions, f)
-        with open(f"{filename}_output_ref.pkl", "wb"):
+        with open(f"{self.model_ckpt}_output_ref.pkl", "wb"):
             pickle.dump(targets, f)
-        with open(f"{filename}_image_filenames.pkl", "wb"):
+        with open(f"{self.model_ckpt}_image_filenames.pkl", "wb"):
             pickle.dump(images, f)
+
+    def wandb_column_names(self, experiment_setting):
+
+        if experiment_setting == 'flickr30k':
+            columns = ['Image',
+                       'Generated Caption', 'Reference Captions',
+                       'Bleu Score', 'Rouge Score', 'Meteor Score',
+                       ]
+        elif experiment_setting == 'vqa':
+            columns = ['Image',
+                       'Input Text'
+                       'Generated Text', 'Reference Text',
+                       'Bleu Score', 'Rouge Score', 'Meteor Score',
+                       ]
+
+        return columns
+
+    def update_wandb_table(self, wandb_table, img_filename, input_text,
+                           generated_text, reference_text,
+                           bleu_scores, rouge_scores, meteor_scores,
+                           experiment_setting):
+
+        if experiment_setting == 'vqa':
+            wandb_table.add_data(
+                wandb.Image(f'datasets/vqa_images/val/{img_filename[0]}'),
+                input_text[0],
+                generated_text[0],
+                reference_text[0],
+                bleu_scores[0],
+                # bert_score_list[0] if calculate_bert_score ,
+                rouge_scores[0],
+                meteor_scores[0]
+            )
+        else:
+            wandb_table.add_data(
+                wandb.Image(f'datasets/vqa_images/val/{img_filename[0]}'),
+                generated_text[0],
+                reference_text[0],
+                bleu_scores[0],
+                # bert_score_list[0] if calculate_bert_score ,
+                rouge_scores[0],
+                meteor_scores[0]
+            )
 
     def save_pretrained(self, path):
         self.model.save_pretrained(path)

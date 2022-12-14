@@ -44,7 +44,8 @@ def compute_rouge_score(output, reference):
         temp_score = 0
         for r in ref:
             score = rouge(op, r)
-            rougeL_f_score = score['rougeL_fmeasure']
+            #print(score)
+            rougeL_f_score = score['rougeL_fmeasure'].item()
             temp_score = max(temp_score, rougeL_f_score)
         scores.append(round(temp_score*100, 2))
 

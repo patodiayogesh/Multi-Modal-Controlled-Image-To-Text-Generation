@@ -69,7 +69,7 @@ class MultiModalModel:
               path):
 
         self.model.train()
-        set_steps = set([100,500,1000,5000,10000,50000])
+        set_steps = set([10,50,100,500,1000,5000,10000])
         total_loss = 0.0
         progress_bar = tqdm(train_dataloader)
         for batch_idx, batch_data in enumerate(progress_bar):
@@ -95,7 +95,7 @@ class MultiModalModel:
             loss.backward()
             self.optimizer.step()
 
-            if batch_idx in set_steps:
+            if batch_idx in set_steps and epoch==0:
                 self.model.save_pretrained(f'{path}_batch{batch_idx}/')
                 
             if batch_idx % self.log_freq == 0:
@@ -182,7 +182,7 @@ class MultiModalModel:
                 predictions += generated_captions
                 targets += reference_captions
                 images += image_file_name
-                print(generated_captions,reference_captions,image_file_name)
+                #print(generated_captions,reference_captions,image_file_name)
                 with open(f"{filename}_output.hyp", "a") as f:
                     for pred in generated_captions:
                         f.write(f"{pred}\n")

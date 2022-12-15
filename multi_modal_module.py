@@ -213,7 +213,14 @@ class MultiModalModel:
                     meteor_scores += meteor_score_list
                 progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
-                if batch_idx % 10 == 0:
+                if len(image_file_name) == 1:
+                    if batch_idx % 10 == 0:
+                        self.update_wandb_table(wandb_table,
+                                                image_file_name,
+                                                input_text, generated_text, reference_text,
+                                                bleu_score_list, rouge_score_list, meteor_score_list,
+                                                experiment_setting)
+                else:
                     self.update_wandb_table(wandb_table,
                                             image_file_name,
                                             input_text, generated_text, reference_text,
@@ -247,7 +254,7 @@ class MultiModalModel:
                        ]
         elif experiment_setting == 'vqa':
             columns = ['Image',
-                       'Input Text'
+                       'Input Text',
                        'Generated Text', 'Reference Text',
                        'Bleu Score', 'Rouge Score', 'Meteor Score',
                        ]

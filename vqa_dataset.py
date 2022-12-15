@@ -127,7 +127,7 @@ class VQAPredictionDataset(Dataset):
         question = self.pairs[index][1]
         answer = self.pairs[index][2]
         image_filename = self.pairs[index][0]
-        img = Image.open(self.image_dir + image_filename)
+        img = Image.open(self.image_dir + image_filename).convert('RGB')
         if self.transform:
             img = self.transform(img)
         return img, question, answer, image_filename

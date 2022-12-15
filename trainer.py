@@ -13,9 +13,9 @@ class Trainer:
         self.dataset = dataset
         self.epochs = epochs
         self.patience = patience
-        if type(dataset) == 'VQADatasetModule':
+        if dataset.__class__.__name__ == 'VQADatasetModule':
             self.experiment_setting = 'vqa'
-        else:
+        elif dataset.__class__.__name__ == 'FlickrDatasetModule':
             self.experiment_setting = 'flickr30k'
         self.checkpoint_path = 'checkpoints/'
         self.version = self._get_run_version()

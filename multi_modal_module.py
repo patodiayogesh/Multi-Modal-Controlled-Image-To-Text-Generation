@@ -186,7 +186,6 @@ class MultiModalModel:
                 predictions += generated_text
                 targets += reference_text
                 images += image_file_name
-                print(input_text, generated_text,reference_text,image_file_name)
 
                 if experiment_setting == 'vqa':
                     with open(f"{filename}_input", "a") as f:
@@ -230,14 +229,14 @@ class MultiModalModel:
                    f'{filename} Prediction Samples': wandb_table,
                    })
 
-        with open(f"{self.model_ckpt}_model_inputs.pkl", "wb"):
-            pickle.dump(model_inputs, f)
-        with open(f"{self.model_ckpt}_output_hyp.pkl", "wb"):
-            pickle.dump(predictions, f)
-        with open(f"{self.model_ckpt}_output_ref.pkl", "wb"):
-            pickle.dump(targets, f)
-        with open(f"{self.model_ckpt}_image_filenames.pkl", "wb"):
-            pickle.dump(images, f)
+        with open(f"{self.model_ckpt}_model_inputs.pkl", "wb") as save_file:
+            pickle.dump(model_inputs, save_file)
+        with open(f"{self.model_ckpt}_output_hyp.pkl", "wb") as save_file:
+            pickle.dump(predictions, save_file)
+        with open(f"{self.model_ckpt}_output_ref.pkl", "wb") as save_file:
+            pickle.dump(targets, save_file)
+        with open(f"{self.model_ckpt}_image_filenames.pkl", "wb") as save_file:
+            pickle.dump(images, save_file)
 
     def wandb_column_names(self, experiment_setting):
 

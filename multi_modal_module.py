@@ -213,6 +213,7 @@ class MultiModalModel:
                     meteor_scores += meteor_score_list
                 progress_bar.set_postfix(bleu_score=avg_bleu_score)
 
+                # If batch size is 1, log every 10 the image else log first image in batch
                 if len(image_file_name) == 1:
                     if batch_idx % 10 == 0:
                         self.update_wandb_table(wandb_table,

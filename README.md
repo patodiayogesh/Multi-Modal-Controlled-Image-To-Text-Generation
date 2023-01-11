@@ -1,4 +1,4 @@
-# Multi-Modal Image To Text Generation
+# Multi-Modal Controlled Image To Text Generation
 
 The project implements a BART model and alters the architecture 
 to input image along-with text and generate corresponding text. 

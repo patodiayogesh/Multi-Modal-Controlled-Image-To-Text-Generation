@@ -11,6 +11,9 @@ The image-caption fine-tuned model is then trained on VQA dataset.
 
 We analyse the performance of the models trained using our masking strategies.
 
+The results of the experiments have been consolidated and are presented in the following paper
+> [Prompted Multi-Modal learning for Vision-Language Understanding for Image Caption Generation](https://github.com/patodiayogesh/Multi-Modal-Controlled-Image-To-Text-Generation/blob/main/Prompted%20Multi-Modal%20learning%20for%20Vision-Language%20Understanding%20for%20Image%20Caption%20Generation.pdf)
+
 ## Data Downloading
 
 The datasets should be downloaded in datasets folder in root directory
